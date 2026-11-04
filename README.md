@@ -4,9 +4,16 @@
 
 一个 Chrome 扩展，把工资换算成**秒**。点开浏览器工具栏，看一眼今天已经赚了多少、还有多久能走——上班这件事，突然就有了进度条。
 
-![弹窗界面](docs/screenshot.png)
+![上班鼓励器](docs/hero.png)
 
-![收入统计](docs/dashboard.png)
+<details>
+<summary>查看界面大图（弹窗 / 收入统计）</summary>
+
+![弹窗界面](docs/preview-popup.png)
+
+![收入统计](docs/preview-dashboard.png)
+
+</details>
 
 ---
 
@@ -32,13 +39,22 @@
 
 ## 📦 安装
 
-扩展未上架 Chrome 应用商店，用开发者模式加载即可（约 30 秒）：
+**方式一：下载安装包（推荐）**
 
-1. 下载或克隆本仓库到本地
-2. 打开 Chrome，地址栏输入 `chrome://extensions/`
-3. 右上角打开 **开发者模式**
-4. 点击 **加载已解压的扩展程序**，选择本仓库根目录
-5. 工具栏出现 💰 图标，点击即可使用；建议点「图钉」固定
+到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.1.0.zip`，解压后得到一个文件夹，然后：
+
+1. 打开 Chrome，地址栏输入 `chrome://extensions/`
+2. 右上角打开 **开发者模式**
+3. 点击 **加载已解压的扩展程序**，选中解压出来的文件夹
+4. 工具栏出现 💰 图标，点击即可使用；建议点「图钉」固定
+
+**方式二：克隆仓库**
+
+```bash
+git clone https://github.com/Susie-ss/work-encouragement-extension.git
+```
+
+同样用「加载已解压的扩展程序」选中仓库根目录即可。
 
 > Edge 同理：`edge://extensions/` → 开发人员模式 → 加载解压缩的扩展。
 
@@ -102,8 +118,9 @@ work-encouragement-extension/
 ├── background.js      # Service Worker：图标徽章每分钟刷新
 ├── icons/             # 16 / 32 / 48 / 128 图标
 └── docs/
-    ├── screenshot.png
-    └── dashboard.png
+    ├── hero.png
+    ├── preview-popup.png
+    └── preview-dashboard.png
 ```
 
 ---
