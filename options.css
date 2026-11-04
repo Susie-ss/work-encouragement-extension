@@ -52,6 +52,7 @@ body {
 .field input[type="text"],
 .field input[type="number"],
 .field input[type="time"],
+.field select,
 .field textarea {
   width: 100%;
   padding: 9px 12px;
@@ -68,6 +69,36 @@ body {
   border-color: var(--primary);
   background: #fff;
   box-shadow: 0 0 0 3px var(--primary-light);
+}
+.field select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236b7280' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.field select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+.field.is-hidden { display: none; }
+
+/* 薪资单位标签 */
+.unit-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  vertical-align: 1px;
 }
 .field input::placeholder, .field textarea::placeholder { color: var(--text-muted); }
 .field textarea { resize: vertical; min-height: 104px; line-height: 1.7; }

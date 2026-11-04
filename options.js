@@ -1,7 +1,18 @@
 /**
  * Work Encourager · Options
  */
-import { DEFAULT_CONFIG, parseTimeStr } from "./lib/calc.js";
+import {
+  DEFAULT_CONFIG,
+  CURRENCIES,
+  CURRENCY_CODES,
+  parseTimeStr,
+  normalizeCurrency,
+  getCurrencyRate,
+  getCurrencySymbol,
+  convertAmount,
+  detectCurrency,
+  formatMoney
+} from "./lib/calc.js";
 import {
   applyStatic,
   normalizeLang,
@@ -15,7 +26,13 @@ let config = { ...DEFAULT_CONFIG };
 const els = {
   monthlySalary: document.getElementById("monthlySalary"),
   workDaysPerMonth: document.getElementById("workDaysPerMonth"),
-  currencySymbol: document.getElementById("currencySymbol"),
+  currency: document.getElementById("currency"),
+  currencyRate: document.getElementById("currencyRate"),
+  rateField: document.getElementById("rateField"),
+  rateLabel: document.getElementById("rateLabel"),
+  rateHint: document.getElementById("rateHint"),
+  salaryUnit: document.getElementById("salaryUnit"),
+  salaryHint: document.getElementById("salaryHint"),
   workStart: document.getElementById("workStart"),
   workEnd: document.getElementById("workEnd"),
   breakStart: document.getElementById("breakStart"),
@@ -39,6 +56,73 @@ const boxes = Array.from(els.weekdayPicker.querySelectorAll("input[type=checkbox
 const langBtns = Array.from(els.langPicker.querySelectorAll(".lang-opt"));
 const lang = () => normalizeLang(config.language);
 
+/* ---------------- 货币 ---------------- */
+
+let lastCurrency = DEFAULT_CONFIG.currency;
+
+/** 输入框里手填的汇率；空 = 用内置参考汇率 */
+function typedRate() {
+  const raw = String(els.currencyRate.value || "").trim();
+  if (raw === "") return null;
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : null;
+}
+
+/** 当前生效汇率：1 单位 = ? 人民币 */
+function rateOfInput(code) {
+  const c = normalizeCurrency(code);
+  if (c === "CNY") return 1;
+  const typed = typedRate();
+  return typed !== null && typed > 0 ? typed : CURRENCIES[c].rate;
+}
+
+function renderCurrencyOptions() {
+  const l = lang();
+  els.currency.innerHTML = CURRENCY_CODES.map(
+    (code) =>
+      `<option value="${code}">${t(l, "currency." + code)} · ${code} ${CURRENCIES[code].symbol.trim()}</option>`
+  ).join("");
+  els.currency.value = normalizeCurrency(lastCurrency);
+}
+
+/** 单位标签、汇率提示、折合人民币提示 */
+function syncCurrencyFields() {
+  const l = lang();
+  const code = normalizeCurrency(els.currency.value);
+  const rate = rateOfInput(code);
+
+  els.salaryUnit.textContent = code;
+  els.rateField.classList.toggle("is-hidden", code === "CNY");
+  els.currencyRate.placeholder = String(CURRENCIES[code].rate);
+  els.rateLabel.textContent = t(l, "opt.rate.label", { code });
+  els.rateHint.textContent = t(l, "opt.rate.hint", {
+    code,
+    rate: formatMoney(rate, "", rate < 1 ? 4 : 2)
+  });
+
+  const salary = parseFloat(els.monthlySalary.value) || 0;
+  let hint = t(l, "opt.salary.hint");
+  if (code !== "CNY" && salary > 0) {
+    const yuan = convertAmount(salary, code, "CNY", rate, 1);
+    hint += " · " + t(l, "opt.salaryIn", { amount: formatMoney(yuan, "¥", 0) });
+  }
+  els.salaryHint.textContent = hint;
+}
+
+/** 切单位：先按新旧汇率把月薪换算过去，再把汇率框重置为该货币的参考值 */
+function onCurrencyChange() {
+  const to = normalizeCurrency(els.currency.value);
+  const from = normalizeCurrency(lastCurrency);
+  const amount = parseFloat(els.monthlySalary.value) || 0;
+
+  if (to !== from && amount > 0) {
+    els.monthlySalary.value = convertAmount(amount, from, to, rateOfInput(from), CURRENCIES[to].rate);
+  }
+  els.currencyRate.value = to === "CNY" ? "" : CURRENCIES[to].rate;
+  lastCurrency = to;
+  syncCurrencyFields();
+}
+
 /* ---------------- 语言 ---------------- */
 
 function refreshLang() {
@@ -56,6 +140,9 @@ function refreshLang() {
     btn.classList.toggle("active", btn.dataset.lang === l);
     btn.setAttribute("aria-pressed", String(btn.dataset.lang === l));
   });
+
+  renderCurrencyOptions();
+  syncCurrencyFields();
 }
 
 async function switchLanguage(next) {
@@ -70,7 +157,13 @@ async function switchLanguage(next) {
 function fillForm(cfg) {
   els.monthlySalary.value = cfg.monthlySalary;
   els.workDaysPerMonth.value = cfg.workDaysPerMonth;
-  els.currencySymbol.value = cfg.currencySymbol;
+
+  // 旧配置只存了符号：先按符号猜一次单位，避免单位显示错位
+  const code = normalizeCurrency(cfg.currency || detectCurrency(cfg.currencySymbol));
+  lastCurrency = code;
+  els.currency.value = code;
+  els.currencyRate.value = code === "CNY" ? "" : getCurrencyRate({ ...cfg, currency: code });
+
   els.workStart.value = cfg.workStart;
   els.workEnd.value = cfg.workEnd;
   els.breakStart.value = cfg.breakStart;
@@ -90,6 +183,7 @@ function fillForm(cfg) {
     : (cfg.motivationalQuotes || []).join("\n");
 
   syncRateFields();
+  syncCurrencyFields();
 }
 
 function getFormData() {
@@ -98,10 +192,15 @@ function getFormData() {
     ? quotesText.split("\n").map((s) => s.trim()).filter(Boolean)
     : [];
 
+  const code = normalizeCurrency(els.currency.value);
+  const rate = code === "CNY" ? 1 : rateOfInput(code);
+
   return {
     monthlySalary: parseFloat(els.monthlySalary.value) || 0,
     workDaysPerMonth: parseFloat(els.workDaysPerMonth.value) || 0,
-    currencySymbol: els.currencySymbol.value.trim() || DEFAULT_CONFIG.currencySymbol,
+    currency: code,
+    currencyRate: code === "CNY" ? 0 : rate,
+    currencySymbol: getCurrencySymbol({ currency: code }),
     workStart: els.workStart.value || DEFAULT_CONFIG.workStart,
     workEnd: els.workEnd.value || DEFAULT_CONFIG.workEnd,
     breakStart: els.breakStart.value || DEFAULT_CONFIG.breakStart,
@@ -128,6 +227,10 @@ function syncRateFields() {
 function validate(cfg) {
   if (cfg.monthlySalary <= 0) return "err.salary";
   if (cfg.workDaysPerMonth <= 0 || cfg.workDaysPerMonth > 31) return "err.days";
+
+  const code = normalizeCurrency(els.currency.value);
+  const typed = typedRate();
+  if (code !== "CNY" && typed !== null && typed <= 0) return "err.rate";
   if (cfg.workDays.length === 0) return "err.workdays";
 
   const start = parseTimeStr(cfg.workStart);
@@ -194,6 +297,9 @@ els.statsBtn.addEventListener("click", () => {
 
 els.overtimeEnabled.addEventListener("change", syncRateFields);
 els.weekendEnabled.addEventListener("change", syncRateFields);
+els.currency.addEventListener("change", onCurrencyChange);
+els.currencyRate.addEventListener("input", syncCurrencyFields);
+els.monthlySalary.addEventListener("input", syncCurrencyFields);
 
 langBtns.forEach((btn) => {
   btn.addEventListener("click", () => switchLanguage(btn.dataset.lang));
