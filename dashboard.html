@@ -1,37 +1,38 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>收入统计 · 上班鼓励器</title>
+  <title>Earnings · Work Encourager</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
   <div class="page">
     <header class="page-header">
       <div>
-        <h1>📊 收入统计</h1>
+        <h1 data-i18n="dash.heading">📊 Earnings</h1>
         <p class="subtitle" id="rangeHint">--</p>
       </div>
       <div class="header-actions">
-        <button id="exportBtn" class="btn btn-primary">导出 CSV</button>
-        <button id="settingsBtn" class="btn btn-ghost">⚙ 设置</button>
+        <button id="exportBtn" class="btn btn-primary" data-i18n="dash.export">Export CSV</button>
+        <button id="settingsBtn" class="btn btn-ghost" data-i18n="dash.settings">⚙ Settings</button>
+        <button id="langBtn" class="btn btn-ghost btn-lang" data-i18n-title="btn.lang">EN</button>
       </div>
     </header>
 
     <section class="stat-row">
       <div class="stat-card">
-        <div class="stat-label">今日已赚</div>
+        <div class="stat-label" data-i18n="stat.today">Earned today</div>
         <div class="stat-value" id="statToday">¥0.00</div>
         <div class="stat-sub" id="statTodaySub">--</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">本周累计</div>
+        <div class="stat-label" data-i18n="stat.week">This week</div>
         <div class="stat-value" id="statWeek">¥0.00</div>
         <div class="stat-sub" id="statWeekSub">--</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">本月累计</div>
+        <div class="stat-label" data-i18n="stat.month">This month</div>
         <div class="stat-value accent" id="statMonth">¥0.00</div>
         <div class="stat-sub" id="statMonthSub">--</div>
       </div>
@@ -39,23 +40,22 @@
 
     <section class="panel">
       <div class="panel-head">
-        <h2>本周每日收入</h2>
+        <h2 data-i18n="chart.week">Daily earnings · this week</h2>
         <span class="panel-tip" id="weekTip"></span>
       </div>
-      <svg id="weekChart" viewBox="0 0 700 240" role="img" aria-label="本周每日收入柱状图"></svg>
+      <svg id="weekChart" viewBox="0 0 700 240" role="img" data-i18n-aria="chart.weekAria"></svg>
     </section>
 
     <section class="panel">
       <div class="panel-head">
-        <h2>本月累计曲线</h2>
+        <h2 data-i18n="chart.month">Cumulative · this month</h2>
         <span class="panel-tip" id="monthTip"></span>
       </div>
-      <svg id="monthChart" viewBox="0 0 700 240" role="img" aria-label="本月累计收入折线图"></svg>
+      <svg id="monthChart" viewBox="0 0 700 240" role="img" data-i18n-aria="chart.monthAria"></svg>
     </section>
 
-    <p class="footnote">
-      金额按设置中的薪资与工时实时折算；休息日默认不计薪，可在「设置 → 加班与周末」中开启周末计薪。
-      导出的 CSV 覆盖最近 60 天，可直接用 Excel / Numbers 打开。
+    <p class="footnote" data-i18n="dash.footnote">
+      Amounts are derived live from the salary and hours in Settings.
     </p>
   </div>
 

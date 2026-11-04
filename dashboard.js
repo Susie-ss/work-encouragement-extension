@@ -1,11 +1,9 @@
 /**
- * 上班鼓励器 · 统计页
+ * Work Encourager · Dashboard
  * 本周柱状图 / 本月累计曲线 / 汇总 / CSV 导出
  */
 import {
   DEFAULT_CONFIG,
-  WEEKDAY_NAMES,
-  WEEKDAY_SHORT,
   getDayStat,
   getWeekStats,
   getMonthStats,
@@ -16,6 +14,14 @@ import {
   dayKey,
   formatMoney
 } from "./lib/calc.js";
+import {
+  applyStatic,
+  normalizeLang,
+  t,
+  formatMonthTitle,
+  WEEKDAYS,
+  WEEKDAYS_SHORT
+} from "./lib/i18n.js";
 
 let config = { ...DEFAULT_CONFIG };
 
@@ -32,8 +38,11 @@ const els = {
   weekChart: document.getElementById("weekChart"),
   monthChart: document.getElementById("monthChart"),
   exportBtn: document.getElementById("exportBtn"),
-  settingsBtn: document.getElementById("settingsBtn")
+  settingsBtn: document.getElementById("settingsBtn"),
+  langBtn: document.getElementById("langBtn")
 };
+
+const lang = () => normalizeLang(config.language);
 
 /* ---------------- 图表工具 ---------------- */
 
@@ -72,6 +81,7 @@ function shortMoney(v, symbol) {
 /* ---------------- 本周柱状图 ---------------- */
 
 function renderWeekChart(stats) {
+  const l = lang();
   const values = stats.map((s) => s.earned);
   const max = niceMax(Math.max(...values, getDailyWage(config)) * 1.12);
   const band = PLOT_W / 7;
@@ -94,13 +104,13 @@ function renderWeekChart(stats) {
 
     if (h > 0) {
       svg += `<rect x="${cx - barW / 2}" y="${y}" width="${barW}" height="${Math.max(2, h)}" rx="5" fill="${fill}" />`;
-      svg += `<text class="chart-value${isToday ? "" : ""}" x="${cx}" y="${y - 7}" text-anchor="middle">${Math.round(s.earned)}</text>`;
+      svg += `<text class="chart-value" x="${cx}" y="${y - 7}" text-anchor="middle">${Math.round(s.earned)}</text>`;
     } else {
       svg += `<rect x="${cx - barW / 2}" y="${BASE_Y - 2}" width="${barW}" height="2" rx="1" fill="#e5e7eb" />`;
     }
 
     const d = s.date;
-    const label = `周${WEEKDAY_SHORT[d.getDay()]}`;
+    const label = WEEKDAYS_SHORT[l][d.getDay()];
     const dateTxt = `${d.getMonth() + 1}/${d.getDate()}`;
     svg += `<text class="chart-label" x="${cx}" y="${BASE_Y + 15}" text-anchor="middle"${isToday ? ' style="fill:#4f46e5;font-weight:600"' : ""}>${label}</text>`;
     svg += `<text class="chart-axis" x="${cx}" y="${BASE_Y + 29}" text-anchor="middle">${dateTxt}</text>`;
@@ -109,12 +119,16 @@ function renderWeekChart(stats) {
   els.weekChart.innerHTML = svg;
 
   const done = stats.filter((s) => !s.isFuture).length;
-  els.weekTip.textContent = `已过 ${done} 天 · 峰值 ${formatMoney(Math.max(...values), config.currencySymbol)}`;
+  els.weekTip.textContent = t(l, "tip.week", {
+    n: done,
+    peak: formatMoney(Math.max(...values), config.currencySymbol)
+  });
 }
 
 /* ---------------- 本月累计曲线 ---------------- */
 
 function renderMonthChart(stats) {
+  const l = lang();
   const n = stats.length;
   const cumulative = [];
   let acc = 0;
@@ -160,16 +174,21 @@ function renderMonthChart(stats) {
   for (let i = 0; i < n; i += 5) ticks.add(i);
   ticks.forEach((i) => {
     if (i < 0 || i >= n) return;
-    svg += `<text class="chart-axis" x="${xOf(i)}" y="${BASE_Y + 16}" text-anchor="middle">${i + 1}日</text>`;
+    const label = l === "zh" ? `${i + 1}日` : `${i + 1}`;
+    svg += `<text class="chart-axis" x="${xOf(i)}" y="${BASE_Y + 16}" text-anchor="middle">${label}</text>`;
   });
 
   els.monthChart.innerHTML = svg;
-  els.monthTip.textContent = `已过 ${n} 天 · 目标日薪 ${formatMoney(daily, config.currencySymbol)}`;
+  els.monthTip.textContent = t(l, "tip.month", {
+    n,
+    target: formatMoney(daily, config.currencySymbol)
+  });
 }
 
 /* ---------------- 汇总 ---------------- */
 
 function renderSummary() {
+  const l = lang();
   const now = new Date();
   const today = getDayStat(now, config, now);
   const week = getWeekStats(config, now);
@@ -179,19 +198,30 @@ function renderSummary() {
   const monthSum = sumStat(month);
   const daily = getDailyWage(config);
 
-  els.rangeHint.textContent =
-    `${now.getFullYear()}年${now.getMonth() + 1}月 · 月薪 ${formatMoney(config.monthlySalary, config.currencySymbol, 0)} · 工作日 ${(config.workDays || []).length} 天/周`;
+  els.rangeHint.textContent = t(l, "range.hint", {
+    period: formatMonthTitle(now, l),
+    salary: formatMoney(config.monthlySalary, config.currencySymbol, 0),
+    days: (config.workDays || []).length
+  });
 
   els.statToday.textContent = formatMoney(today.earned, config.currencySymbol);
-  els.statTodaySub.textContent = `已工作 ${(today.worked / 3600).toFixed(2)} 小时 · 进度 ${Math.round(today.progress)}%`;
+  els.statTodaySub.textContent = t(l, "sub.today", {
+    h: (today.worked / 3600).toFixed(2),
+    p: Math.round(today.progress)
+  });
 
   const elapsedDays = week.filter((s) => !s.isFuture).length || 1;
   els.statWeek.textContent = formatMoney(weekSum.earned, config.currencySymbol);
-  els.statWeekSub.textContent = `${(weekSum.worked / 3600).toFixed(1)} 小时 · 日均 ${formatMoney(weekSum.earned / elapsedDays, config.currencySymbol)}`;
+  els.statWeekSub.textContent = t(l, "sub.week", {
+    h: (weekSum.worked / 3600).toFixed(1),
+    avg: formatMoney(weekSum.earned / elapsedDays, config.currencySymbol)
+  });
 
   els.statMonth.textContent = formatMoney(monthSum.earned, config.currencySymbol);
-  els.statMonthSub.textContent =
-    `${(monthSum.worked / 3600).toFixed(1)} 小时 · 折合 ${daily > 0 ? (monthSum.earned / daily).toFixed(1) : "0"} 天`;
+  els.statMonthSub.textContent = t(l, "sub.month", {
+    h: (monthSum.worked / 3600).toFixed(1),
+    d: daily > 0 ? (monthSum.earned / daily).toFixed(1) : "0"
+  });
 
   renderWeekChart(week);
   renderMonthChart(month);
@@ -205,10 +235,20 @@ function csvCell(v) {
 }
 
 function exportCsv() {
+  const l = lang();
   const now = new Date();
   const today = startOfDay(now);
   const rows = [
-    ["日期", "星期", "是否工作日", "工作(小时)", "加班(小时)", "收入(元)", "时薪(元/小时)", "备注"]
+    [
+      t(l, "csv.date"),
+      t(l, "csv.weekday"),
+      t(l, "csv.isWorkday"),
+      t(l, "csv.worked"),
+      t(l, "csv.overtime"),
+      t(l, "csv.earned"),
+      t(l, "csv.hourly"),
+      t(l, "csv.note")
+    ]
   ];
 
   let totalWorked = 0;
@@ -226,26 +266,30 @@ function exportCsv() {
 
     rows.push([
       dayKey(d),
-      WEEKDAY_NAMES[d.getDay()],
-      s.isWorkday ? "是" : "否",
+      WEEKDAYS[l][d.getDay()],
+      s.isWorkday ? t(l, "csv.yes") : t(l, "csv.no"),
       (s.normal / 3600).toFixed(2),
       (s.overtime / 3600).toFixed(2),
       s.earned.toFixed(2),
       s.hourly.toFixed(2),
-      s.isWorkday ? "标准工作日" : config.weekendEnabled ? "周末计薪" : "休息日不计薪"
+      s.isWorkday
+        ? t(l, "csv.noteWorkday")
+        : config.weekendEnabled
+          ? t(l, "csv.noteWeekend")
+          : t(l, "csv.noteRest")
     ]);
   }
 
   rows.push([]);
   rows.push([
-    "合计",
+    t(l, "csv.total"),
     "",
     "",
     (totalWorked / 3600).toFixed(2),
     (totalOt / 3600).toFixed(2),
     totalEarned.toFixed(2),
     "",
-    "最近 60 天"
+    t(l, "csv.last60")
   ]);
 
   const csv = "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
@@ -253,24 +297,47 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `上班鼓励器_收入明细_${dayKey(now)}.csv`;
+  a.download = t(l, "csv.filename", { date: dayKey(now) });
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+/* ---------------- 语言 ---------------- */
+
+function refreshLangChrome() {
+  const l = lang();
+  applyStatic(document, l);
+  document.title = t(l, "dash.title");
+  els.langBtn.textContent = l === "zh" ? "EN" : "中";
+  els.langBtn.title = t(l, "btn.lang");
+}
+
+async function toggleLanguage() {
+  config.language = lang() === "zh" ? "en" : "zh";
+  await chrome.storage.sync.set({ language: config.language });
+  refreshLangChrome();
+  renderSummary();
+}
+
 /* ---------------- 启动 ---------------- */
 
 async function init() {
   config = { ...DEFAULT_CONFIG, ...(await chrome.storage.sync.get(DEFAULT_CONFIG)) };
+  refreshLangChrome();
   renderSummary();
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
+    let langChanged = false;
     Object.keys(changes).forEach((k) => {
-      if (k in DEFAULT_CONFIG) config[k] = changes[k].newValue;
+      if (k in DEFAULT_CONFIG) {
+        config[k] = changes[k].newValue;
+        if (k === "language") langChanged = true;
+      }
     });
+    if (langChanged) refreshLangChrome();
     renderSummary();
   });
 
@@ -279,5 +346,6 @@ async function init() {
 
 els.exportBtn.addEventListener("click", exportCsv);
 els.settingsBtn.addEventListener("click", () => chrome.runtime.openOptionsPage());
+els.langBtn.addEventListener("click", toggleLanguage);
 
 init();

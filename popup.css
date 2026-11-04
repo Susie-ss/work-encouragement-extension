@@ -30,14 +30,88 @@ body {
 
 .container { display: flex; flex-direction: column; }
 
+/* ---------- 顶部：驴拉磨动画 ---------- */
+.mill-band {
+  height: 96px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fffdf8 0%, #f6ead6 100%);
+}
+.mill-scene { display: block; width: 100%; height: 100%; }
+
+/* 四条腿：对角步态，两条腿反相 */
+.mill-scene .leg {
+  transform-box: fill-box;
+  transform-origin: 50% 6%;
+  animation: mill-step 0.72s ease-in-out infinite;
+}
+.mill-scene .leg-b-far,
+.mill-scene .leg-f-near { animation-delay: -0.36s; }
+
+@keyframes mill-step {
+  0%, 100% { transform: rotate(-13deg); }
+  50%      { transform: rotate(13deg); }
+}
+
+/* 尾巴摆动 */
+.mill-scene .tail {
+  transform-box: fill-box;
+  transform-origin: 100% 0%;
+  animation: mill-wag 1.1s ease-in-out infinite alternate;
+}
+@keyframes mill-wag {
+  from { transform: rotate(-9deg); }
+  to   { transform: rotate(9deg); }
+}
+
+/* 石碾花纹滚动 = 碾盘在转 */
+.mill-scene .roller-stripes { animation: mill-spin 1.15s linear infinite; }
+@keyframes mill-spin {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-12px); }
+}
+
+/* 碾顶纹理自转 */
+.mill-scene .roller-top {
+  transform-box: view-box;
+  transform-origin: 240px 46px;
+  animation: mill-spin-top 3.4s linear infinite;
+}
+@keyframes mill-spin-top {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 磨道虚线圈缓慢流动 */
+.mill-scene .orbit { animation: mill-orbit 2.4s linear infinite; }
+@keyframes mill-orbit {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -28; }
+}
+
+/* 蹄下扬尘 */
+.mill-scene .puff {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  opacity: 0;
+  animation: mill-puff 1.9s ease-out infinite;
+}
+.mill-scene .puff-2 { animation-delay: 0.55s; }
+.mill-scene .puff-3 { animation-delay: 1.15s; }
+@keyframes mill-puff {
+  0%   { transform: scale(0.4) translateY(0);     opacity: 0; }
+  25%  { opacity: 0.6; }
+  100% { transform: scale(1.6) translateY(-13px); opacity: 0; }
+}
+
 /* ---------- Header ---------- */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 18px 20px 14px;
+  padding: 16px 20px 12px;
   background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: 0;
   color: white;
   position: relative;
   overflow: hidden;
@@ -84,13 +158,13 @@ body {
 }
 
 /* ---------- Main ---------- */
-.main { padding: 16px 20px 4px; display: flex; flex-direction: column; gap: 12px; }
+.main { padding: 15px 20px 4px; display: flex; flex-direction: column; gap: 10px; }
 
 /* Salary */
 .salary-card {
   background: var(--card);
   border-radius: var(--radius);
-  padding: 18px 20px 16px;
+  padding: 15px 20px 13px;
   text-align: center;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
@@ -166,20 +240,30 @@ body {
   padding: 12px 16px;
   text-align: center;
 }
-.quote-text { font-size: 12px; color: var(--primary); line-height: 1.55; font-style: italic; }
+.quote-text {
+  font-size: 12px;
+  color: var(--primary);
+  line-height: 1.55;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* ---------- Footer ---------- */
 .footer {
   display: flex;
   gap: 10px;
-  padding: 12px 20px 16px;
+  padding: 11px 20px 14px;
   border-top: 1px solid var(--border);
   background: var(--card);
   border-radius: 0 0 var(--radius) var(--radius);
 }
 .btn {
   flex: 1;
-  padding: 9px 12px;
+  min-width: 0;
+  padding: 9px 8px;
   border: none;
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -187,12 +271,22 @@ body {
   cursor: pointer;
   transition: all var(--transition);
   font-family: inherit;
+  white-space: nowrap;
 }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
 .btn-secondary { background: var(--primary-light); color: var(--primary); border: 1px solid #e0e7ff; }
 .btn-secondary:hover { background: #e0e7ff; transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
+
+/* 语言切换：固定窄宽度，显示当前语言 */
+.btn-lang {
+  flex: 0 0 46px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 9px 0;
+}
 
 /* Animation */
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
@@ -202,4 +296,11 @@ body {
   .mini-value.running { animation: none; }
   .progress-fill { transition: none; }
   .btn { transition: none; }
+  .mill-scene .leg,
+  .mill-scene .tail,
+  .mill-scene .roller-stripes,
+  .mill-scene .roller-top,
+  .mill-scene .orbit,
+  .mill-scene .puff { animation: none; }
+  .mill-scene .puff { opacity: 0.35; }
 }

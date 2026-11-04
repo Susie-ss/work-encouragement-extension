@@ -1,7 +1,16 @@
 /**
- * 上班鼓励器 · 设置页
+ * Work Encourager · Options
  */
 import { DEFAULT_CONFIG, parseTimeStr } from "./lib/calc.js";
+import {
+  applyStatic,
+  normalizeLang,
+  t,
+  isBuiltinQuotes,
+  WEEKDAY_CHIP
+} from "./lib/i18n.js";
+
+let config = { ...DEFAULT_CONFIG };
 
 const els = {
   monthlySalary: document.getElementById("monthlySalary"),
@@ -19,6 +28,7 @@ const els = {
   otRateField: document.getElementById("otRateField"),
   weRateField: document.getElementById("weRateField"),
   motivationalQuotes: document.getElementById("motivationalQuotes"),
+  langPicker: document.getElementById("langPicker"),
   saveBtn: document.getElementById("saveBtn"),
   statsBtn: document.getElementById("statsBtn"),
   resetAllBtn: document.getElementById("resetAllBtn"),
@@ -26,28 +36,58 @@ const els = {
 };
 
 const boxes = Array.from(els.weekdayPicker.querySelectorAll("input[type=checkbox]"));
+const langBtns = Array.from(els.langPicker.querySelectorAll(".lang-opt"));
+const lang = () => normalizeLang(config.language);
+
+/* ---------------- 语言 ---------------- */
+
+function refreshLang() {
+  const l = lang();
+  applyStatic(document, l);
+  document.title = t(l, "opt.title");
+
+  // 星期胶囊：按语言换成 Mon / 一
+  boxes.forEach((b) => {
+    const span = b.parentElement.querySelector("span");
+    if (span) span.textContent = WEEKDAY_CHIP[l][Number(b.value)];
+  });
+
+  langBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.lang === l);
+    btn.setAttribute("aria-pressed", String(btn.dataset.lang === l));
+  });
+}
+
+async function switchLanguage(next) {
+  if (next === lang()) return;
+  config.language = next;
+  await chrome.storage.sync.set({ language: next });
+  refreshLang();
+}
 
 /* ---------------- 表单读写 ---------------- */
 
-function fillForm(config) {
-  els.monthlySalary.value = config.monthlySalary;
-  els.workDaysPerMonth.value = config.workDaysPerMonth;
-  els.currencySymbol.value = config.currencySymbol;
-  els.workStart.value = config.workStart;
-  els.workEnd.value = config.workEnd;
-  els.breakStart.value = config.breakStart;
-  els.breakEnd.value = config.breakEnd;
+function fillForm(cfg) {
+  els.monthlySalary.value = cfg.monthlySalary;
+  els.workDaysPerMonth.value = cfg.workDaysPerMonth;
+  els.currencySymbol.value = cfg.currencySymbol;
+  els.workStart.value = cfg.workStart;
+  els.workEnd.value = cfg.workEnd;
+  els.breakStart.value = cfg.breakStart;
+  els.breakEnd.value = cfg.breakEnd;
 
-  const days = (config.workDays && config.workDays.length ? config.workDays : DEFAULT_CONFIG.workDays).map(Number);
+  const days = (cfg.workDays && cfg.workDays.length ? cfg.workDays : DEFAULT_CONFIG.workDays).map(Number);
   boxes.forEach((b) => { b.checked = days.includes(Number(b.value)); });
 
-  els.overtimeEnabled.checked = !!config.overtimeEnabled;
-  els.weekdayOvertimeRate.value = config.weekdayOvertimeRate ?? 1.5;
-  els.weekendEnabled.checked = !!config.weekendEnabled;
-  els.weekendRate.value = config.weekendRate ?? 2;
+  els.overtimeEnabled.checked = !!cfg.overtimeEnabled;
+  els.weekdayOvertimeRate.value = cfg.weekdayOvertimeRate ?? 1.5;
+  els.weekendEnabled.checked = !!cfg.weekendEnabled;
+  els.weekendRate.value = cfg.weekendRate ?? 2;
 
-  const quotes = (config.motivationalQuotes || []).join("\n");
-  els.motivationalQuotes.value = quotes === DEFAULT_CONFIG.motivationalQuotes.join("\n") ? "" : quotes;
+  // 空 = 使用内置语录；旧版本存的内置中文数组也识别为空
+  els.motivationalQuotes.value = isBuiltinQuotes(cfg.motivationalQuotes)
+    ? ""
+    : (cfg.motivationalQuotes || []).join("\n");
 
   syncRateFields();
 }
@@ -56,7 +96,7 @@ function getFormData() {
   const quotesText = els.motivationalQuotes.value.trim();
   const quotes = quotesText
     ? quotesText.split("\n").map((s) => s.trim()).filter(Boolean)
-    : DEFAULT_CONFIG.motivationalQuotes;
+    : [];
 
   return {
     monthlySalary: parseFloat(els.monthlySalary.value) || 0,
@@ -71,6 +111,7 @@ function getFormData() {
     weekdayOvertimeRate: parseFloat(els.weekdayOvertimeRate.value) || DEFAULT_CONFIG.weekdayOvertimeRate,
     weekendEnabled: els.weekendEnabled.checked,
     weekendRate: parseFloat(els.weekendRate.value) || DEFAULT_CONFIG.weekendRate,
+    language: lang(),
     motivationalQuotes: quotes
   };
 }
@@ -82,27 +123,27 @@ function syncRateFields() {
   els.weRateField.classList.toggle("disabled", !els.weekendEnabled.checked);
 }
 
-/* ---------------- 校验 ---------------- */
+/* ---------------- 校验（返回文案 key） ---------------- */
 
-function validate(config) {
-  if (config.monthlySalary <= 0) return "月薪必须大于 0";
-  if (config.workDaysPerMonth <= 0 || config.workDaysPerMonth > 31) return "月工作天数应在 1–31 之间";
-  if (config.workDays.length === 0) return "请至少选择一个工作日";
+function validate(cfg) {
+  if (cfg.monthlySalary <= 0) return "err.salary";
+  if (cfg.workDaysPerMonth <= 0 || cfg.workDaysPerMonth > 31) return "err.days";
+  if (cfg.workDays.length === 0) return "err.workdays";
 
-  const start = parseTimeStr(config.workStart);
-  const end = parseTimeStr(config.workEnd);
-  const bs = parseTimeStr(config.breakStart);
-  const be = parseTimeStr(config.breakEnd);
+  const start = parseTimeStr(cfg.workStart);
+  const end = parseTimeStr(cfg.workEnd);
+  const bs = parseTimeStr(cfg.breakStart);
+  const be = parseTimeStr(cfg.breakEnd);
 
-  if (start >= end) return "下班时间必须晚于上班时间";
-  if (bs >= be) return "午休结束必须晚于午休开始";
-  if (bs < start || be > end) return "午休必须落在上下班时间之内";
-  if (end - start - (be - bs) < 1800) return "扣除午休后工作时长不足 30 分钟";
+  if (start >= end) return "err.endAfterStart";
+  if (bs >= be) return "err.breakOrder";
+  if (bs < start || be > end) return "err.breakRange";
+  if (end - start - (be - bs) < 1800) return "err.tooShort";
 
-  if (config.overtimeEnabled && (config.weekdayOvertimeRate < 1 || config.weekdayOvertimeRate > 5))
-    return "加班倍率应在 1–5 之间";
-  if (config.weekendEnabled && (config.weekendRate < 1 || config.weekendRate > 5))
-    return "周末倍率应在 1–5 之间";
+  if (cfg.overtimeEnabled && (cfg.weekdayOvertimeRate < 1 || cfg.weekdayOvertimeRate > 5))
+    return "err.otRate";
+  if (cfg.weekendEnabled && (cfg.weekendRate < 1 || cfg.weekendRate > 5))
+    return "err.weRate";
 
   return null;
 }
@@ -121,22 +162,24 @@ function showStatus(message, type = "success") {
 /* ---------------- 动作 ---------------- */
 
 async function save() {
-  const config = getFormData();
-  const error = validate(config);
-  if (error) {
-    showStatus(`⚠️ ${error}`, "error");
+  const cfg = getFormData();
+  const errorKey = validate(cfg);
+  if (errorKey) {
+    showStatus(`⚠️ ${t(lang(), errorKey)}`, "error");
     return;
   }
-  await chrome.storage.sync.set(config);
-  showStatus("✅ 已保存");
+  await chrome.storage.sync.set(cfg);
+  showStatus(t(lang(), "opt.saved"));
 }
 
 async function resetAll() {
-  if (!confirm("确定恢复默认设置吗？当前配置会被覆盖。")) return;
+  if (!confirm(t(lang(), "opt.confirmReset"))) return;
+  const keepLang = lang();
   await chrome.storage.sync.clear();
-  const config = await chrome.storage.sync.get(DEFAULT_CONFIG);
-  fillForm({ ...DEFAULT_CONFIG, ...config });
-  showStatus("✅ 已恢复默认");
+  const stored = await chrome.storage.sync.get(DEFAULT_CONFIG);
+  config = { ...DEFAULT_CONFIG, ...stored, language: keepLang };
+  fillForm(config);
+  showStatus(t(lang(), "opt.resetDone"));
 }
 
 /* ---------------- 事件 ---------------- */
@@ -152,6 +195,10 @@ els.statsBtn.addEventListener("click", () => {
 els.overtimeEnabled.addEventListener("change", syncRateFields);
 els.weekendEnabled.addEventListener("change", syncRateFields);
 
+langBtns.forEach((btn) => {
+  btn.addEventListener("click", () => switchLanguage(btn.dataset.lang));
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) els.saveBtn.click();
 });
@@ -159,4 +206,6 @@ document.addEventListener("keydown", (e) => {
 /* ---------------- 启动 ---------------- */
 
 const stored = await chrome.storage.sync.get(DEFAULT_CONFIG);
-fillForm({ ...DEFAULT_CONFIG, ...stored });
+config = { ...DEFAULT_CONFIG, ...stored };
+refreshLang();
+fillForm(config);

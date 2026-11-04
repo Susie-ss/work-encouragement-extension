@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Work Encourager",
+    "description": "Extension name shown in the Chrome toolbar and Web Store."
+  },
+  "appShort": {
+    "message": "Encourager",
+    "description": "Short name used where space is limited."
+  },
+  "appDesc": {
+    "message": "See what you have earned today in real time — salary counter, countdown to log-off, overtime multipliers, and weekly/monthly earning curves.",
+    "description": "Extension description shown in the Chrome Web Store."
+  }
+}

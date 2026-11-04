@@ -1,8 +1,9 @@
 /**
- * 上班鼓励器 · Background Service Worker
+ * Work Encourager · Background Service Worker
  * 负责：图标徽章金额刷新（每分钟）、安装/启动初始化
  */
 import { DEFAULT_CONFIG, getDayStat, formatBadge, formatMoney } from "./lib/calc.js";
+import { t, normalizeLang } from "./lib/i18n.js";
 
 const BADGE_COLOR = "#4f46e5";
 const ALARM_NAME = "badgeTick";
@@ -15,6 +16,7 @@ async function readConfig() {
 async function updateBadge() {
   try {
     const config = await readConfig();
+    const lang = normalizeLang(config.language);
     const now = new Date();
     const stat = getDayStat(now, config, now);
 
@@ -24,11 +26,14 @@ async function updateBadge() {
     await chrome.action.setTitle({
       title:
         text === ""
-          ? "上班鼓励器"
-          : `上班鼓励器 · 今日已赚 ${formatMoney(stat.earned, config.currencySymbol)}`
+          ? t(lang, "app.name")
+          : t(lang, "badge.title", {
+              app: t(lang, "app.name"),
+              amount: formatMoney(stat.earned, config.currencySymbol)
+            })
     });
   } catch (err) {
-    console.warn("[上班鼓励器] 徽章更新失败", err);
+    console.warn("[work-encourager] badge update failed", err);
   }
 }
 

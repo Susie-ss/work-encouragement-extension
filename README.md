@@ -1,19 +1,45 @@
-# 💰 上班鼓励器 · Work Encouragement
+# 💰 Work Encourager · 上班鼓励器
 
-> 每敲一次键盘，存款就多一分钱。
+> Every keystroke drops another coin in the jar. · 每敲一次键盘，存款就多一分钱。
 
-一个 Chrome 扩展，把工资换算成**秒**。点开浏览器工具栏，看一眼今天已经赚了多少、还有多久能走——上班这件事，突然就有了进度条。
+A Chrome extension that turns your salary into **seconds**. Click the toolbar icon and see what you've earned today, how long until you're free — work suddenly comes with a progress bar. There's also a donkey walking in circles up top, because that's the job.
 
-![上班鼓励器](docs/hero.png)
+一个把工资换算成**秒**的 Chrome 扩展。点开工具栏，看一眼今天已经赚了多少、还有多久能走——上班这件事，突然就有了进度条。顶部那头驴会一直转圈，因为工作本来就是这样。
+
+**English is the default UI. 中文一键切换。**
+
+![Work Encourager](docs/cover.png)
 
 <details>
-<summary>查看界面大图（弹窗 / 收入统计）</summary>
+<summary>查看界面大图／View full-size screenshots</summary>
 
-![弹窗界面](docs/preview-popup.png)
+**English（默认）**
 
-![收入统计](docs/preview-dashboard.png)
+![Popup EN](docs/ui-popup-en.png)
+
+**中文**
+
+![Popup ZH](docs/ui-popup-zh.png)
+
+**统计页 / Dashboard**
+
+![Dashboard](docs/ui-dashboard.png)
 
 </details>
+
+---
+
+## 🌐 语言 / Language
+
+| | |
+| --- | --- |
+| 默认语言 | **English** |
+| 切换方式 | 弹窗右下角「中 / EN」按钮 · 统计页右上角 · 设置页顶部 Language 卡片 |
+| 生效范围 | 弹窗、统计页、设置页、徽章悬停提示，切换后立即刷新，无需重启 |
+| 记忆方式 | 写入 `chrome.storage.sync`，换设备跟着账号走 |
+| 工具栏名称 | 跟随浏览器语言（`_locales/en` + `_locales/zh_CN`） |
+
+所有文案集中在 `lib/i18n.js` 一张表里，新增语言只要加一个 key 区块；页面用 `data-i18n` 标记，运行时统一填充，不需要维护两份 HTML。
 
 ---
 
@@ -30,7 +56,9 @@
 | **周 / 月曲线** | 独立统计页：本周每日柱状图 + 本月累计折线图 + 今日/本周/本月三档汇总 |
 | **CSV 导出** | 一键导出最近 60 天明细（日期、星期、工时、加班、收入、时薪），Excel 可直接打开 |
 | **图标徽章** | 不用点开，工具栏图标上直接显示今日已赚金额，每分钟刷新 |
-| **激励语录** | 内置 10 条，可自定义每行一条，随机轮换 |
+| **激励语录** | 中英各内置 10 条，可自定义每行一条，随机轮换 |
+| **中英双语** | 默认英文，弹窗内一键切中文，全站同步 |
+| **驴拉磨动画** | 顶部 340×96 的内联 SVG 场景，四条腿迈步、石碾转动、蹄下扬尘 |
 | **配置云同步** | 设置存 `chrome.storage.sync`，换设备登录同一账号即可同步 |
 
 所有计算都在本地完成：**不上传、不联网、不收集任何数据**。
@@ -41,11 +69,11 @@
 
 **方式一：下载安装包（推荐）**
 
-到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.1.0.zip`，解压后得到一个文件夹，然后：
+到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.2.0.zip`，解压后得到一个文件夹，然后：
 
 1. 打开 Chrome，地址栏输入 `chrome://extensions/`
 2. 右上角打开 **开发者模式**
-3. 点击 **加载已解压的扩展程序**，选中解压出来的文件夹
+3. 点击 **加载已解压的扩展程序**，选中解压出来的文件夹（不是 zip）
 4. 工具栏出现 💰 图标，点击即可使用；建议点「图钉」固定
 
 **方式二：克隆仓库**
@@ -62,10 +90,11 @@ git clone https://github.com/Susie-ss/work-encouragement-extension.git
 
 ## 🎛 首次配置
 
-点击弹窗底部 **⚙ 设置**（或右键图标 → 选项）：
+点击弹窗底部 **⚙ 设置 / Settings**（或右键图标 → 选项）：
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
+| Language | `English` | 切换后立即生效 |
 | 月薪 | `20000` | 用于推算时薪，税前税后按你的口径 |
 | 月工作天数 | `21.75` | 法定标准；双休 21.75、单休可填 26 |
 | 货币符号 | `¥` | 显示在金额前 |
@@ -76,7 +105,7 @@ git clone https://github.com/Susie-ss/work-encouragement-extension.git
 | 工作日晚加班倍率 | `1.5` | 1–5 之间可调 |
 | 休息日计薪 | 开 | 休息日进入工时窗口即按倍率计薪 |
 | 周末倍率 | `2.0` | 1–5 之间可调 |
-| 激励语录 | 内置 10 条 | 每行一条，留空恢复默认 |
+| 激励语录 | 内置 10 条 | 每行一条，留空恢复当前语言的内置语录 |
 
 **计算方式：**
 
@@ -94,14 +123,31 @@ git clone https://github.com/Susie-ss/work-encouragement-extension.git
 
 ## 📊 统计页
 
-点击弹窗的 **📊 统计** 打开：
+点击弹窗的 **📊 统计 / Stats** 打开：
 
 - **三档汇总**：今日已赚 / 本周累计 / 本月累计，附工时与日均
 - **本周柱状图**：周一到周日每天的收入，今天高亮，峰值单独标注
 - **本月累计曲线**：从 1 号到今天的累计收入走势，面积图 + 当前值标记
-- **导出 CSV**：`上班鼓励器_收入明细_YYYY-MM-DD.csv`，带 UTF-8 BOM，Excel 打开不乱码
+- **导出 CSV**：文件名随语言变化（`work-encourager_earnings_YYYY-MM-DD.csv` / `上班鼓励器_收入明细_YYYY-MM-DD.csv`），带 UTF-8 BOM，Excel 打开不乱码
 
 > 关于口径：历史收入是按当前配置**反推**的（标准工时 × 时薪），不是逐日打卡记录。所以调整月薪后，往期图表会跟着变——它衡量的是「这段时间的时间价值」，而不是银行流水。
+
+---
+
+## 🐴 顶部那头驴
+
+一条 96px 高的暖色场景，纯内联 SVG + CSS 关键帧，没有图片、没有 GIF、没有 canvas：
+
+| 部位 | 动效 |
+| --- | --- |
+| 四条腿 | 对角步态，以腿根为轴前后摆，前后腿反相（`transform-box: fill-box`） |
+| 尾巴 | 左右轻摆 |
+| 石碾身 | 竖向石纹 `translateX(-12px)` 循环滚动，看起来像碾子在转 |
+| 石碾顶 | 径向刻痕绕中心自转 |
+| 磨道 | 虚线 `stroke-dashoffset` 流动，暗示一直绕圈 |
+| 蹄下 | 三团扬尘升起淡出 |
+
+整段约 3 KB，系统开启「减弱动态效果」时会自动定格。
 
 ---
 
@@ -109,18 +155,23 @@ git clone https://github.com/Susie-ss/work-encouragement-extension.git
 
 ```
 work-encouragement-extension/
-├── manifest.json      # Manifest V3 配置（权限、入口、图标、ESM worker）
+├── manifest.json          # Manifest V3（__MSG__ 占位符 + default_locale）
 ├── lib/
-│   └── calc.js        # 单一计算内核：工时窗口、状态、倍数、区间汇总
-├── popup.html/css/js  # 弹窗：已赚金额、倒计时、计时器、进度、语录
+│   ├── calc.js            # 单一计算内核：工时窗口、状态、倍数、区间汇总
+│   └── i18n.js            # 中英文案表、data-i18n 应用器、内置语录
+├── _locales/
+│   ├── en/messages.json   # 工具栏名称与商店描述（英文）
+│   └── zh_CN/messages.json
+├── popup.html/css/js      # 弹窗：驴拉磨、已赚金额、倒计时、计时器、进度、语录
 ├── dashboard.html/css/js  # 统计页：柱状图、折线图、CSV 导出
-├── options.html/css/js    # 设置页：薪资、工时、工作日、倍率、语录
-├── background.js      # Service Worker：图标徽章每分钟刷新
-├── icons/             # 16 / 32 / 48 / 128 图标
+├── options.html/css/js    # 设置页：语言、薪资、工时、工作日、倍率、语录
+├── background.js          # Service Worker：图标徽章每分钟刷新
+├── icons/                 # 16 / 32 / 48 / 128 图标
 └── docs/
-    ├── hero.png
-    ├── preview-popup.png
-    └── preview-dashboard.png
+    ├── cover.png
+    ├── ui-popup-en.png
+    ├── ui-popup-zh.png
+    └── ui-dashboard.png
 ```
 
 ---
@@ -128,7 +179,8 @@ work-encouragement-extension/
 ## 🔧 实现要点
 
 - **单一计算内核**：`lib/calc.js` 以 ES module 形式被 popup、统计页、设置页和 service worker 同时 `import`，保证「弹窗看到的金额」和「统计页画出的柱子」用的是同一套算法，不会各算各的。
-- **无框架、零依赖**：原生 HTML/CSS/JS + 手写 SVG 图表，整包不到 60 KB，点击瞬间打开，不用等加载。
+- **单一文案表**：`lib/i18n.js` 集中管理两套文案，页面只写 key（`data-i18n="salary.label"`），运行时统一填充；带变量的文案走 `t(lang, key, vars)`，避免拼接字符串。
+- **无框架、零依赖**：原生 HTML/CSS/JS + 手写 SVG 图表 + 手写 SVG 动画，整包不到 70 KB，点击瞬间打开，不用等加载。
 - **按秒刷新但不抖动**：数字用 `tabular-nums` 等宽对齐，金额变化时不会左右跳动。
 - **跨午休正确计时**：把一天切成「上班前 / 工作 / 午休 / 加班 / 下班后」几个区间，按已跨越的段落分别扣减，四个阶段的数字都能对上。
 - **倍率只作用于增量**：加班只算超过下班时间的那段（上限 6 小时），标准工时永远按 1×，避免倍率污染日薪。
@@ -141,6 +193,12 @@ work-encouragement-extension/
 
 **Q：金额为什么和我实际到手的不一样？**
 A：这里算的是按约定薪资折算的「时间价值」，不是税后实发。想更贴近到手工资，把月薪填成税后金额即可。
+
+**Q：怎么切换成中文？**
+A：弹窗右下角点一下「中」，整站立刻变中文；统计页右上角、设置页顶部的 Language 卡片也能切。选择会跟着 Chrome 账号同步。
+
+**Q：工具栏名字为什么不跟着切换？**
+A：工具栏名称由 `_locales` 按**浏览器语言**决定（Chrome 的规则，扩展无法在运行时改）。界面语言则是应用内自己管的，两者独立；把 Chrome 语言设成中文即可让名称也显示「上班鼓励器」。
 
 **Q：午休还在跑时间吗？**
 A：不会。午休时段计时器冻结、金额停止增长、倒计时不动，状态显示「午休中」。午休也在干活的话，把午休起止设成同一时刻即可。
@@ -155,7 +213,7 @@ A：默认开启。休息日只要落在工时窗口内就按 2× 计薪；不�
 A：不会。全部保存在浏览器本地，扩展没有申请任何网络权限。
 
 **Q：换电脑数据还在吗？**
-A：设置（薪资、工时、倍率）走 `chrome.storage.sync`，会随 Chrome 账号同步；今日进度是实时算出来的，不依赖本地历史。
+A：设置（薪资、工时、倍率、语言）走 `chrome.storage.sync`，会随 Chrome 账号同步；今日进度是实时算出来的，不依赖本地历史。
 
 **Q：想每天重置一次怎么办？**
 A：不需要手动重置——日期一变，金额和计时器自动从零开始。
@@ -172,6 +230,8 @@ A：徽章最多显示 4 个字符，超过 1000 会自动显示成 `1.2k` 这�
 - [x] 加班倍率（工作日晚 / 周末）
 - [x] 历史数据导出 CSV
 - [x] 图标徽章实时显示今日金额
+- [x] 中英双语（默认英文，可切换）
+- [x] 顶部驴拉磨动画
 - [ ] 法定节假日日历（自动跳过调休）
 - [ ] 多套薪资方案切换（主业 / 副业）
 - [ ] 桌面通知：下班前 10 分钟提醒

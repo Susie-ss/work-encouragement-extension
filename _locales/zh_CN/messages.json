@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "上班鼓励器",
+    "description": "扩展名称，显示在工具栏与应用商店"
+  },
+  "appShort": {
+    "message": "鼓励器",
+    "description": "空间有限时使用的简称"
+  },
+  "appDesc": {
+    "message": "实时显示今日已赚工资、下班倒计时、加班倍率、周月收入曲线——让上班更有动力",
+    "description": "扩展描述，显示在应用商店"
+  }
+}

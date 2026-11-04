@@ -106,6 +106,30 @@ body {
 }
 .chip input:focus-visible + span { box-shadow: 0 0 0 3px var(--primary-light); }
 
+/* 语言切换 */
+.lang-picker { display: flex; gap: 8px; margin-bottom: 10px; }
+.lang-opt {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: #fafafa;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.lang-opt:hover:not(.active) { border-color: #c7d2fe; color: var(--primary); }
+.lang-opt.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.25);
+}
+.lang-opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-light); }
+
 /* 开关 */
 .switch-field {
   display: flex;

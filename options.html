@@ -1,66 +1,75 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>上班鼓励器 - 设置</title>
+  <title>Work Encourager · Settings</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <div class="options-container">
     <header class="options-header">
-      <h1>⚙ 上班鼓励器设置</h1>
-      <p class="subtitle">配置薪资、工时与加班倍率，让鼓励器算得更准</p>
+      <h1 data-i18n="opt.heading">⚙ Settings</h1>
+      <p class="subtitle" data-i18n="opt.subtitle">Set your pay and hours so the numbers stay honest</p>
     </header>
 
     <main class="options-main">
       <section class="section">
-        <h2>💰 薪资设置</h2>
+        <h2 data-i18n="opt.lang">Language</h2>
+        <div class="lang-picker" id="langPicker" role="group">
+          <button type="button" class="lang-opt" data-lang="en">English</button>
+          <button type="button" class="lang-opt" data-lang="zh">中文</button>
+        </div>
+        <p class="section-hint" data-i18n="opt.langHint">Takes effect immediately, everywhere</p>
+      </section>
+
+      <section class="section">
+        <h2 data-i18n="opt.salary">💰 Pay</h2>
         <div class="field">
-          <label for="monthlySalary">月薪（税前或税后，按你的口径）</label>
-          <input type="number" id="monthlySalary" min="0" step="100" placeholder="例如 20000">
-          <span class="hint">用于推算时薪与日薪</span>
+          <label for="monthlySalary" data-i18n="opt.salary.label">Monthly salary</label>
+          <input type="number" id="monthlySalary" min="0" step="100" data-i18n-ph="opt.salary.ph">
+          <span class="hint" data-i18n="opt.salary.hint">Used to derive your hourly and daily rate</span>
         </div>
         <div class="field">
-          <label for="workDaysPerMonth">月工作天数</label>
+          <label for="workDaysPerMonth" data-i18n="opt.days.label">Workdays per month</label>
           <input type="number" id="workDaysPerMonth" min="1" max="31" step="0.5" placeholder="21.75">
-          <span class="hint">法定月工作天数通常为 21.75 天</span>
+          <span class="hint" data-i18n="opt.days.hint">21.75 is the statutory average</span>
         </div>
         <div class="field">
-          <label for="currencySymbol">货币符号</label>
+          <label for="currencySymbol" data-i18n="opt.currency.label">Currency symbol</label>
           <input type="text" id="currencySymbol" maxlength="2" placeholder="¥">
-          <span class="hint">显示在金额前的符号</span>
+          <span class="hint" data-i18n="opt.currency.hint">Shown in front of every amount</span>
         </div>
       </section>
 
       <section class="section">
-        <h2>⏰ 工作时间设置</h2>
+        <h2 data-i18n="opt.hours">⏰ Hours</h2>
         <div class="field-grid">
           <div class="field">
-            <label for="workStart">上班时间</label>
+            <label for="workStart" data-i18n="opt.workStart">Start</label>
             <input type="time" id="workStart">
           </div>
           <div class="field">
-            <label for="workEnd">下班时间</label>
+            <label for="workEnd" data-i18n="opt.workEnd">End</label>
             <input type="time" id="workEnd">
           </div>
           <div class="field">
-            <label for="breakStart">午休开始</label>
+            <label for="breakStart" data-i18n="opt.breakStart">Break starts</label>
             <input type="time" id="breakStart">
           </div>
           <div class="field">
-            <label for="breakEnd">午休结束</label>
+            <label for="breakEnd" data-i18n="opt.breakEnd">Break ends</label>
             <input type="time" id="breakEnd">
           </div>
         </div>
-        <p class="section-hint">午休时间会自动从工作时长中扣除，倒计时与金额同步暂停。</p>
+        <p class="section-hint" data-i18n="opt.hours.hint">Breaks are subtracted from working time.</p>
       </section>
 
       <section class="section">
-        <h2>📅 工作日与加班</h2>
+        <h2 data-i18n="opt.weekdaySection">📅 Workdays &amp; overtime</h2>
 
         <div class="field">
-          <label>哪些天算工作日</label>
+          <label data-i18n="opt.workdays.label">Which days count as workdays</label>
           <div class="weekday-picker" id="weekdayPicker">
             <label class="chip"><input type="checkbox" value="1"><span>一</span></label>
             <label class="chip"><input type="checkbox" value="2"><span>二</span></label>
@@ -70,57 +79,57 @@
             <label class="chip"><input type="checkbox" value="6"><span>六</span></label>
             <label class="chip"><input type="checkbox" value="0"><span>日</span></label>
           </div>
-          <span class="hint">勾选的日子按标准工时计薪，未勾选的日子视为休息日</span>
+          <span class="hint" data-i18n="opt.workdays.hint">Checked days earn at the standard rate.</span>
         </div>
 
         <div class="field switch-field">
           <div class="switch-text">
-            <label for="overtimeEnabled">下班后继续计加班</label>
-            <span class="hint">开启后，超过下班时间按倍率累加（最多计 6 小时），状态显示「加班中」</span>
+            <label for="overtimeEnabled" data-i18n="opt.ot.label">Keep counting overtime after hours</label>
+            <span class="hint" data-i18n="opt.ot.hint">Past the end time, earnings keep accruing at the multiplier.</span>
           </div>
           <input type="checkbox" id="overtimeEnabled" class="switch">
         </div>
 
         <div class="field" id="otRateField">
-          <label for="weekdayOvertimeRate">工作日晚加班倍率</label>
+          <label for="weekdayOvertimeRate" data-i18n="opt.otRate.label">Weeknight overtime multiplier</label>
           <input type="number" id="weekdayOvertimeRate" min="1" max="5" step="0.1" placeholder="1.5">
-          <span class="hint">常见为 1.5（平时加班）或 2（休息日）</span>
+          <span class="hint" data-i18n="opt.otRate.hint">Commonly 1.5 for weeknights, 2 for days off</span>
         </div>
 
         <div class="field switch-field">
           <div class="switch-text">
-            <label for="weekendEnabled">休息日加班计薪</label>
-            <span class="hint">开启后，休息日进入工时窗口也按倍率计薪，状态显示「加班中」</span>
+            <label for="weekendEnabled" data-i18n="opt.weekend.label">Paid work on days off</label>
+            <span class="hint" data-i18n="opt.weekend.hint">Days off inside the work window also earn.</span>
           </div>
           <input type="checkbox" id="weekendEnabled" class="switch">
         </div>
 
         <div class="field" id="weRateField">
-          <label for="weekendRate">周末加班倍率</label>
+          <label for="weekendRate" data-i18n="opt.weekendRate.label">Weekend multiplier</label>
           <input type="number" id="weekendRate" min="1" max="5" step="0.1" placeholder="2">
-          <span class="hint">按标准工时窗口折算，历史休息日不追溯</span>
+          <span class="hint" data-i18n="opt.weekendRate.hint">Applied to the standard window.</span>
         </div>
       </section>
 
       <section class="section">
-        <h2>💬 激励语录</h2>
+        <h2 data-i18n="opt.quotes">💬 Quotes</h2>
         <div class="field">
-          <label for="motivationalQuotes">自定义语录（每行一条，随机展示）</label>
-          <textarea id="motivationalQuotes" rows="6" placeholder="每一秒都在为自由存钱&#10;再坚持一下，离财务自由又近了一步"></textarea>
-          <span class="hint">留空将使用内置的 10 条语录</span>
+          <label for="motivationalQuotes" data-i18n="opt.quotes.label">Custom quotes</label>
+          <textarea id="motivationalQuotes" rows="6" data-i18n-ph="opt.quotes.ph"></textarea>
+          <span class="hint" data-i18n="opt.quotes.hint">Leave empty to use the 10 built-in quotes</span>
         </div>
       </section>
 
       <section class="section section-danger">
-        <h2>🗑 危险操作</h2>
-        <button id="resetAllBtn" class="btn btn-danger">恢复默认设置</button>
-        <p class="hint">清除所有自定义配置，恢复出厂值</p>
+        <h2 data-i18n="opt.danger">🗑 Danger zone</h2>
+        <button id="resetAllBtn" class="btn btn-danger" data-i18n="opt.reset">Restore defaults</button>
+        <p class="hint" data-i18n="opt.reset.hint">Clears your settings and goes back to factory values</p>
       </section>
     </main>
 
     <footer class="options-footer">
-      <button id="saveBtn" class="btn btn-primary">保存设置</button>
-      <button id="statsBtn" class="btn btn-ghost">📊 查看统计</button>
+      <button id="saveBtn" class="btn btn-primary" data-i18n="opt.save">Save</button>
+      <button id="statsBtn" class="btn btn-ghost" data-i18n="opt.viewStats">📊 View stats</button>
       <span id="saveStatus" class="save-status"></span>
     </footer>
   </div>
