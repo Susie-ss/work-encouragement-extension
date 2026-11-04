@@ -2,9 +2,9 @@
 
 > Every keystroke drops another coin in the jar. · 每敲一次键盘，存款就多一分钱。
 
-A Chrome extension that turns your salary into **seconds**. Click the toolbar icon and see what you've earned today, how long until you're free — work suddenly comes with a progress bar. There's also a donkey walking in circles up top, because that's the job.
+A Chrome extension that turns your salary into **seconds**. Click the toolbar icon and see what you've earned today, how long until you're free — work suddenly comes with a progress bar. There's also a donkey up top that changes its mood with the clock, because that's the job.
 
-一个把工资换算成**秒**的 Chrome 扩展。点开工具栏，看一眼今天已经赚了多少、还有多久能走——上班这件事，突然就有了进度条。顶部那头驴会一直转圈，因为工作本来就是这样。
+一个把工资换算成**秒**的 Chrome 扩展。点开工具栏，看一眼今天已经赚了多少、还有多久能走——上班这件事，突然就有了进度条。顶部那头驴会按时间换姿势：早上犯困、午休吃萝卜、下午拉磨、下班前疯跑。
 
 **English is the default UI. 中文一键切换。**
 
@@ -59,7 +59,7 @@ A Chrome extension that turns your salary into **seconds**. Click the toolbar ic
 | **激励语录** | 中英各内置 10 条，可自定义每行一条，随机轮换 |
 | **中英双语** | 默认英文，弹窗内一键切中文，全站同步 |
 | **多币种** | 人民币（默认）/ 美元 / 日元 / 韩元 / 瑞士法郎，切单位自动换算月薪与所有金额 |
-| **驴拉磨动画** | 顶部 340×96 的内联 SVG 场景，四条腿迈步、石碾转动、蹄下扬尘 |
+| **驴拉磨动画** | 顶部 340×96 的内联 SVG 场景，按时间段切换四种姿态：犯困 / 吃萝卜 / 拉磨 / 疯跑 |
 | **配置云同步** | 设置存 `chrome.storage.sync`，换设备登录同一账号即可同步 |
 
 所有计算都在本地完成：**不上传、不联网、不收集任何数据**。
@@ -70,7 +70,7 @@ A Chrome extension that turns your salary into **seconds**. Click the toolbar ic
 
 **方式一：下载安装包（推荐）**
 
-到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.3.0.zip`，解压后得到一个文件夹，然后：
+到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.4.0.zip`，解压后得到一个文件夹，然后：
 
 1. 打开 Chrome，地址栏输入 `chrome://extensions/`
 2. 右上角打开 **开发者模式**
@@ -157,18 +157,31 @@ git clone https://github.com/Susie-ss/work-encouragement-extension.git
 
 ## 🐴 顶部那头驴
 
-一条 96px 高的暖色场景，纯内联 SVG + CSS 关键帧，没有图片、没有 GIF、没有 canvas：
+一条 96px 高的暖色场景，纯内联 SVG + CSS 关键帧，没有图片、没有 GIF、没有 canvas。**它按时间节点换姿势**：
+
+![驴的四种姿态](docs/ui-donkey-phases.png)
+
+| 时段 | 姿态 | 细节 |
+| --- | --- | --- |
+| 上班前 / 下班后 | **犯困** | 眼睛闭上、耳朵耷拉、头顶冒 Zzz，拉杆卸下，石碾静止 |
+| 午休 · 休息日 | **吃萝卜** | 坐下，张嘴啃胡萝卜，碎屑往下掉，眼睛眯成一条缝 |
+| 工作时段 | **正常拉磨** | 对角步态慢慢走，拉杆带着石碾转，蹄下扬尘 |
+| 下班前 30 分钟 | **疯跑** | 步频翻倍、步幅拉到 ±30°，整头驴轻微抖动，瞪眼 + 蓝色汗滴乱飞，石碾飞转 |
+
+判定只看两个值：当前状态和距下班的秒数——`countdown ∈ (0, 30min]` 且正在上班就切「疯跑」，午休 / 休息日切「吃萝卜」，其余工作时间「拉磨」，剩下「犯困」。
+
+同一套场景里的动效：
 
 | 部位 | 动效 |
 | --- | --- |
 | 四条腿 | 对角步态，以腿根为轴前后摆，前后腿反相（`transform-box: fill-box`） |
-| 尾巴 | 左右轻摆 |
+| 尾巴 | 左右轻摆，疯跑时抖得更快 |
 | 石碾身 | 竖向石纹 `translateX(-12px)` 循环滚动，看起来像碾子在转 |
 | 石碾顶 | 径向刻痕绕中心自转 |
 | 磨道 | 虚线 `stroke-dashoffset` 流动，暗示一直绕圈 |
 | 蹄下 | 三团扬尘升起淡出 |
 
-整段约 3 KB，系统开启「减弱动态效果」时会自动定格。
+整段约 6 KB，系统开启「减弱动态效果」时会自动定格。
 
 ---
 
@@ -192,7 +205,8 @@ work-encouragement-extension/
     ├── cover.png
     ├── ui-popup-en.png
     ├── ui-popup-zh.png
-    └── ui-dashboard.png
+    ├── ui-dashboard.png
+    └── ui-donkey-phases.png
 ```
 
 ---
@@ -206,6 +220,7 @@ work-encouragement-extension/
 - **跨午休正确计时**：把一天切成「上班前 / 工作 / 午休 / 加班 / 下班后」几个区间，按已跨越的段落分别扣减，四个阶段的数字都能对上。
 - **倍率只作用于增量**：加班只算超过下班时间的那段（上限 6 小时），标准工时永远按 1×，避免倍率污染日薪。
 - **徽章轻量刷新**：`chrome.alarms` 每分钟唤醒一次 service worker 调 `chrome.action.setBadgeText`，不常驻后台。
+- **四姿态只有一条时间轴**：`millPhase(status, stat)` 只读「当前状态 + 距下班秒数」两个值，写进 `data-phase`；画面上三头驴（走路 / 犯困 / 吃萝卜）始终都在 DOM 里，靠 CSS 选择器显隐，切换时不需要重绘 SVG。且只在值变化时才写属性，否则每秒重设会让 CSS 动画跳回第 0 帧。
 - **无障碍**：支持 `prefers-reduced-motion`（关闭动画）、语义化标签、键盘可达、开关有可见焦点环。
 
 ---
@@ -245,6 +260,9 @@ A：不需要手动重置——日期一变，金额和计时器自动从零开�
 **Q：徽章上的数字太小/太挤？**
 A：徽章最多显示 4 个字符，超过 1000 会自动显示成 `1.2k` 这类缩写，鼠标悬停图标可看到精确金额。
 
+**Q：驴怎么一直犯困？什么时候才会跑起来？**
+A：它跟着时钟走——上班前和下班后犯困，午休和休息日吃萝卜，正常工作时段拉磨，**只有下班前 30 分钟**才疯跑。想立刻看效果，把「下班时间」临时改到 30 分钟内即可；系统开了「减弱动态效果」时会统一定格，不再跑动。
+
 ---
 
 ## 🗺 Roadmap
@@ -256,6 +274,7 @@ A：徽章最多显示 4 个字符，超过 1000 会自动显示成 `1.2k` 这�
 - [x] 图标徽章实时显示今日金额
 - [x] 中英双语（默认英文，可切换）
 - [x] 顶部驴拉磨动画
+- [x] 驴按时段换姿态（犯困 / 吃萝卜 / 拉磨 / 下班前疯跑）
 - [x] 多币种（人民币 / 美元 / 日元 / 韩元 / 瑞郎，切单位自动换算）
 - [ ] 法定节假日日历（自动跳过调休）
 - [ ] 多套薪资方案切换（主业 / 副业）

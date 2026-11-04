@@ -39,14 +39,44 @@ body {
 }
 .mill-scene { display: block; width: 100%; height: 100%; }
 
+/* ---------- 姿态切换 ---------- *
+ * walk / run 共用「走路驴」；tired、eat 是独立绘制的姿态，靠 data-phase 显隐 */
+.mill-scene .dk { display: none; }
+.mill-scene[data-phase="walk"]  .dk-gait,
+.mill-scene[data-phase="run"]   .dk-gait,
+.mill-scene[data-phase="tired"] .dk-tired,
+.mill-scene[data-phase="eat"]   .dk-eat { display: inline; }
+
+/* 只在疯跑时出现的元素（瞪眼 / 汗滴） */
+.mill-scene .run-only { opacity: 0; }
+.mill-scene[data-phase="run"] .run-only { opacity: 1; }
+.mill-scene[data-phase="run"] .eye-dot { opacity: 0; }
+
+/* 站着不动 / 吃萝卜：磨盘停转 */
+.mill-scene[data-phase="tired"] .roller-stripes,
+.mill-scene[data-phase="tired"] .roller-top,
+.mill-scene[data-phase="tired"] .orbit,
+.mill-scene[data-phase="eat"] .roller-stripes,
+.mill-scene[data-phase="eat"] .roller-top,
+.mill-scene[data-phase="eat"] .orbit { animation-play-state: paused; }
+
+/* 不拉磨的时候把拉杆卸下来（犯困 / 吃萝卜） */
+.mill-scene .beam { transition: opacity 0.28s ease; }
+.mill-scene[data-phase="eat"] .beam,
+.mill-scene[data-phase="tired"] .beam { opacity: 0; }
+
+/* 蹄下扬尘：只在干活时 */
+.mill-scene[data-phase="tired"] .dust,
+.mill-scene[data-phase="eat"] .dust { opacity: 0; }
+
 /* 四条腿：对角步态，两条腿反相 */
-.mill-scene .leg {
+.mill-scene .dk-gait .leg {
   transform-box: fill-box;
   transform-origin: 50% 6%;
   animation: mill-step 0.72s ease-in-out infinite;
 }
-.mill-scene .leg-b-far,
-.mill-scene .leg-f-near { animation-delay: -0.36s; }
+.mill-scene .dk-gait .leg-b-far,
+.mill-scene .dk-gait .leg-f-near { animation-delay: -0.36s; }
 
 @keyframes mill-step {
   0%, 100% { transform: rotate(-13deg); }
@@ -102,6 +132,120 @@ body {
   0%   { transform: scale(0.4) translateY(0);     opacity: 0; }
   25%  { opacity: 0.6; }
   100% { transform: scale(1.6) translateY(-13px); opacity: 0; }
+}
+
+/* ---------- 疯跑：下班前半小时 ---------- */
+.mill-scene[data-phase="run"] .dk-gait .leg {
+  animation-name: mill-gallop;
+  animation-duration: 0.26s;
+}
+.mill-scene[data-phase="run"] .dk-gait .leg-b-far,
+.mill-scene[data-phase="run"] .dk-gait .leg-f-near { animation-delay: -0.13s; }
+@keyframes mill-gallop {
+  0%, 100% { transform: rotate(-32deg); }
+  50%      { transform: rotate(27deg); }
+}
+
+.mill-scene[data-phase="run"] .dk-shake {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: dk-jitter 0.13s steps(2, end) infinite;
+}
+@keyframes dk-jitter {
+  0%   { transform: translate(0.9px, -0.8px) rotate(0.7deg); }
+  50%  { transform: translate(-0.9px, 0.6px) rotate(-0.7deg); }
+  100% { transform: translate(0.9px, -0.8px) rotate(0.7deg); }
+}
+
+.mill-scene[data-phase="run"] .tail { animation-duration: 0.34s; }
+.mill-scene[data-phase="run"] .roller-stripes { animation-duration: 0.4s; }
+.mill-scene[data-phase="run"] .roller-top { animation-duration: 1.05s; }
+.mill-scene[data-phase="run"] .orbit { animation-duration: 0.75s; }
+.mill-scene[data-phase="run"] .puff { animation-duration: 0.85s; }
+
+/* 汗滴飞出 */
+.mill-scene .sweat {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  opacity: 0;
+}
+.mill-scene[data-phase="run"] .sweat { animation: dk-sweat 0.62s ease-out infinite; }
+.mill-scene[data-phase="run"] .sweat-2 { animation-delay: 0.2s; }
+.mill-scene[data-phase="run"] .sweat-3 { animation-delay: 0.42s; }
+@keyframes dk-sweat {
+  0%   { transform: translate(0, 0) scale(0.5);      opacity: 0; }
+  22%  { opacity: 0.95; }
+  100% { transform: translate(11px, -9px) scale(1);  opacity: 0; }
+}
+
+/* ---------- 犯困：早上 / 下班后 ---------- */
+.mill-scene .dk-tired .ear-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: dk-ear-sway 3.4s ease-in-out infinite alternate;
+}
+.mill-scene .dk-tired .ear-b { animation-delay: -1.2s; }
+@keyframes dk-ear-sway {
+  from { transform: rotate(-2.5deg); }
+  to   { transform: rotate(2.5deg); }
+}
+
+.mill-scene .dk-tired .tail-droop {
+  transform-box: fill-box;
+  transform-origin: 100% 0%;
+  animation: mill-wag 4.6s ease-in-out infinite alternate;
+}
+
+.mill-scene .zzz .z {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  fill: #b3a48d;
+  opacity: 0;
+  animation: dk-zzz 3s ease-out infinite;
+}
+.mill-scene .zzz .z2 { animation-delay: 1s; }
+.mill-scene .zzz .z3 { animation-delay: 2s; }
+@keyframes dk-zzz {
+  0%   { transform: translate(0, 4px) scale(0.7);   opacity: 0; }
+  25%  { opacity: 0.9; }
+  100% { transform: translate(8px, -15px) scale(1.2); opacity: 0; }
+}
+
+/* ---------- 吃萝卜：午休 ---------- */
+.mill-scene .dk-eat .carrot {
+  transform-box: view-box;
+  transform-origin: 163px 38px;
+  animation: dk-chew 0.44s ease-in-out infinite alternate;
+}
+@keyframes dk-chew {
+  from { transform: rotate(-5deg); }
+  to   { transform: rotate(5deg); }
+}
+
+.mill-scene .dk-eat .head {
+  transform-box: fill-box;
+  transform-origin: 100% 92%;
+  animation: dk-head-bob 0.44s ease-in-out infinite alternate;
+}
+@keyframes dk-head-bob {
+  from { transform: rotate(-2deg); }
+  to   { transform: rotate(2deg); }
+}
+
+.mill-scene .dk-eat .tail-rest {
+  transform-box: fill-box;
+  transform-origin: 100% 50%;
+  animation: mill-wag 3.6s ease-in-out infinite alternate;
+}
+
+.mill-scene .crumb { opacity: 0; }
+.mill-scene[data-phase="eat"] .crumb { animation: dk-crumb 1.6s ease-in infinite; }
+.mill-scene[data-phase="eat"] .crumb-2 { animation-delay: 0.8s; }
+@keyframes dk-crumb {
+  0%   { opacity: 0; transform: translate(0, 0); }
+  20%  { opacity: 0.85; }
+  100% { opacity: 0; transform: translate(2px, 11px); }
 }
 
 /* ---------- Header ---------- */
@@ -298,9 +442,19 @@ body {
   .btn { transition: none; }
   .mill-scene .leg,
   .mill-scene .tail,
+  .mill-scene .tail-droop,
+  .mill-scene .tail-rest,
   .mill-scene .roller-stripes,
   .mill-scene .roller-top,
   .mill-scene .orbit,
-  .mill-scene .puff { animation: none; }
+  .mill-scene .puff,
+  .mill-scene .dk-shake,
+  .mill-scene .sweat,
+  .mill-scene .ear-sway,
+  .mill-scene .carrot,
+  .mill-scene .head,
+  .mill-scene .crumb,
+  .mill-scene .zzz .z { animation: none; }
   .mill-scene .puff { opacity: 0.35; }
+  .mill-scene .zzz .z { opacity: 0.7; }
 }

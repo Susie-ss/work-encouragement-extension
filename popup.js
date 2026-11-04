@@ -26,6 +26,7 @@ let tickTimer = null;
 let currentQuote = "";
 
 const els = {
+  millScene: document.getElementById("millScene"),
   currentDate: document.getElementById("currentDate"),
   weekday: document.getElementById("weekday"),
   workStatus: document.getElementById("workStatus"),
@@ -44,6 +45,30 @@ const els = {
 };
 
 const lang = () => normalizeLang(config.language);
+
+/* ---------- 驴的姿态 ----------
+ * tired 早上犯困 / 下班后瘫着
+ * walk  正常拉磨
+ * run   下班前 30 分钟，疯跑
+ * eat   午休，坐下吃萝卜
+ */
+const FINALE_SECONDS = 30 * 60;
+
+function millPhase(status, stat) {
+  if (status === "break") return "eat";
+  if (status === "working" || status === "overtime") {
+    return stat.countdown > 0 && stat.countdown <= FINALE_SECONDS ? "run" : "walk";
+  }
+  if (status === "rest") return "eat";
+  return "tired"; // before / off
+}
+
+function renderMill(phase) {
+  // 只在值变化时写，避免每秒重设导致动画复位
+  if (els.millScene && els.millScene.dataset.phase !== phase) {
+    els.millScene.dataset.phase = phase;
+  }
+}
 
 /* ---------- 状态文案 ---------- */
 function statusMeta(status) {
@@ -103,6 +128,8 @@ function render() {
   const stat = getDayStat(now, config, now);
   const status = getStatus(config, now);
   const meta = statusMeta(status);
+
+  renderMill(millPhase(status, stat));
 
   els.currentDate.textContent = formatDateTitle(now, l);
   els.weekday.textContent = WEEKDAYS[l][now.getDay()];
