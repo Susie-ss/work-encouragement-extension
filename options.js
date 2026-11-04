@@ -7,10 +7,9 @@ import {
   CURRENCY_CODES,
   parseTimeStr,
   normalizeCurrency,
-  getCurrencyRate,
+  resolveConfig,
   getCurrencySymbol,
   convertAmount,
-  detectCurrency,
   formatMoney
 } from "./lib/calc.js";
 import {
@@ -121,6 +120,30 @@ function onCurrencyChange() {
   els.currencyRate.value = to === "CNY" ? "" : CURRENCIES[to].rate;
   lastCurrency = to;
   syncCurrencyFields();
+  applyCurrency();
+}
+
+/**
+ * 单位改动立即落盘：弹窗/统计页/徽章都读同一份存储，
+ * 用户不必记得点保存，也不会出现「界面还是旧单位」。
+ */
+async function applyCurrency() {
+  const code = normalizeCurrency(els.currency.value);
+  const patch = {
+    currency: code,
+    currencyRate: code === "CNY" ? 0 : rateOfInput(code),
+    currencySymbol: getCurrencySymbol({ currency: code })
+  };
+  const salary = parseFloat(els.monthlySalary.value) || 0;
+  if (salary > 0) patch.monthlySalary = salary;
+
+  try {
+    await chrome.storage.sync.set(patch);
+    showStatus(t(lang(), "opt.saved"));
+  } catch (err) {
+    console.warn("[work-encourager] save currency failed", err);
+    showStatus(t(lang(), "err.saveFailed"), "error");
+  }
 }
 
 /* ---------------- 语言 ---------------- */
@@ -154,15 +177,18 @@ async function switchLanguage(next) {
 
 /* ---------------- 表单读写 ---------------- */
 
-function fillForm(cfg) {
+function fillForm(rawCfg) {
+  // 统一规整：单位、符号、汇率都以 currency 为准，避免旧配置里符号对不上单位
+  const cfg = resolveConfig(rawCfg);
+  config = cfg;
+
   els.monthlySalary.value = cfg.monthlySalary;
   els.workDaysPerMonth.value = cfg.workDaysPerMonth;
 
-  // 旧配置只存了符号：先按符号猜一次单位，避免单位显示错位
-  const code = normalizeCurrency(cfg.currency || detectCurrency(cfg.currencySymbol));
+  const code = cfg.currency;
   lastCurrency = code;
   els.currency.value = code;
-  els.currencyRate.value = code === "CNY" ? "" : getCurrencyRate({ ...cfg, currency: code });
+  els.currencyRate.value = code === "CNY" ? "" : cfg.currencyRate;
 
   els.workStart.value = cfg.workStart;
   els.workEnd.value = cfg.workEnd;
@@ -271,17 +297,30 @@ async function save() {
     showStatus(`⚠️ ${t(lang(), errorKey)}`, "error");
     return;
   }
-  await chrome.storage.sync.set(cfg);
-  showStatus(t(lang(), "opt.saved"));
+  try {
+    await chrome.storage.sync.set(cfg);
+    showStatus(t(lang(), "opt.saved"));
+  } catch (err) {
+    // 存储写入失败（例如同步配额超限）时给出明确提示，而不是假装成功
+    console.warn("[work-encourager] save failed", err);
+    showStatus(`⚠️ ${t(lang(), "err.saveFailed")}`, "error");
+  }
 }
 
 async function resetAll() {
   if (!confirm(t(lang(), "opt.confirmReset"))) return;
   const keepLang = lang();
   await chrome.storage.sync.clear();
-  const stored = await chrome.storage.sync.get(DEFAULT_CONFIG);
-  config = { ...DEFAULT_CONFIG, ...stored, language: keepLang };
+  const stored = await chrome.storage.sync.get(null);
+  config = resolveConfig({ ...stored, language: keepLang });
   fillForm(config);
+  // 默认值也写回去，保证弹窗/统计页和设置页读的是同一份数据
+  await chrome.storage.sync.set({
+    currency: config.currency,
+    currencyRate: config.currencyRate,
+    currencySymbol: config.currencySymbol,
+    language: keepLang
+  });
   showStatus(t(lang(), "opt.resetDone"));
 }
 
@@ -299,6 +338,9 @@ els.overtimeEnabled.addEventListener("change", syncRateFields);
 els.weekendEnabled.addEventListener("change", syncRateFields);
 els.currency.addEventListener("change", onCurrencyChange);
 els.currencyRate.addEventListener("input", syncCurrencyFields);
+els.currencyRate.addEventListener("change", () => {
+  if (normalizeCurrency(els.currency.value) !== "CNY") applyCurrency();
+});
 els.monthlySalary.addEventListener("input", syncCurrencyFields);
 
 langBtns.forEach((btn) => {
@@ -311,7 +353,7 @@ document.addEventListener("keydown", (e) => {
 
 /* ---------------- 启动 ---------------- */
 
-const stored = await chrome.storage.sync.get(DEFAULT_CONFIG);
-config = { ...DEFAULT_CONFIG, ...stored };
+const stored = await chrome.storage.sync.get(null);
+config = resolveConfig(stored);
 refreshLang();
 fillForm(config);

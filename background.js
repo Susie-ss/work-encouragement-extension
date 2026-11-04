@@ -2,15 +2,20 @@
  * Work Encourager · Background Service Worker
  * 负责：图标徽章金额刷新（每分钟）、安装/启动初始化
  */
-import { DEFAULT_CONFIG, getDayStat, formatBadge, formatMoney } from "./lib/calc.js";
+import {
+  resolveConfig,
+  getDayStat,
+  getCurrencyDecimals,
+  formatBadge,
+  formatMoney
+} from "./lib/calc.js";
 import { t, normalizeLang } from "./lib/i18n.js";
 
 const BADGE_COLOR = "#4f46e5";
 const ALARM_NAME = "badgeTick";
 
 async function readConfig() {
-  const stored = await chrome.storage.sync.get(DEFAULT_CONFIG);
-  return { ...DEFAULT_CONFIG, ...stored };
+  return resolveConfig(await chrome.storage.sync.get(null));
 }
 
 async function updateBadge() {
@@ -29,7 +34,7 @@ async function updateBadge() {
           ? t(lang, "app.name")
           : t(lang, "badge.title", {
               app: t(lang, "app.name"),
-              amount: formatMoney(stat.earned, config.currencySymbol)
+              amount: formatMoney(stat.earned, config.currencySymbol, getCurrencyDecimals(config))
             })
     });
   } catch (err) {

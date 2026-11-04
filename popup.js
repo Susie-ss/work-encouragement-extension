@@ -4,11 +4,13 @@
  */
 import {
   DEFAULT_CONFIG,
+  resolveConfig,
   getDayStat,
   getStatus,
   getWindows,
   getHourlyRate,
   getDailyWage,
+  getCurrencyDecimals,
   formatClock,
   formatMoney
 } from "./lib/calc.js";
@@ -138,13 +140,17 @@ function render() {
   els.workStatus.className = `status-badge ${meta.cls}`;
   els.statusMessage.textContent = meta.msg;
 
-  els.earnedSalary.textContent = formatMoney(stat.earned, config.currencySymbol);
+  // 金额统一走「当前单位 + 该单位的小数位」，换单位后符号与位数一起跟着变
+  const dec = getCurrencyDecimals(config);
+  const money = (v, d = dec) => formatMoney(v, config.currencySymbol, d);
+
+  els.earnedSalary.textContent = money(stat.earned);
 
   const hourly = getHourlyRate(config);
   const daily = getDailyWage(config);
   els.salaryRateHint.textContent = t(l, "hint.rate", {
-    hourly: formatMoney(hourly, config.currencySymbol),
-    daily: formatMoney(daily, config.currencySymbol)
+    hourly: money(hourly),
+    daily: money(daily)
   });
 
   els.workTimer.textContent = formatClock(stat.worked);
@@ -183,23 +189,18 @@ async function toggleLanguage() {
 
 /* ---------- 启动 ---------- */
 async function init() {
-  config = { ...DEFAULT_CONFIG, ...(await chrome.storage.sync.get(DEFAULT_CONFIG)) };
+  config = resolveConfig(await chrome.storage.sync.get(null));
 
   refreshLangChrome();
   render();
   tickTimer = setInterval(render, 1000);
 
-  // 设置改变时立即反映
-  chrome.storage.onChanged.addListener((changes, area) => {
+  // 设置改变时立即反映：整份重读再规整，避免只更新到一半（例如换了单位没换符号）
+  chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "sync") return;
-    let langChanged = false;
-    Object.keys(changes).forEach((k) => {
-      if (k in DEFAULT_CONFIG) {
-        config[k] = changes[k].newValue;
-        if (k === "language") langChanged = true;
-      }
-    });
-    if (langChanged) refreshLangChrome();
+    const prevLang = lang();
+    config = resolveConfig(await chrome.storage.sync.get(null));
+    if (lang() !== prevLang) refreshLangChrome();
     else if ("motivationalQuotes" in changes) pickQuote();
     render();
   });

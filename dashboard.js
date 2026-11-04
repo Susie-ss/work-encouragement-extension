@@ -4,10 +4,12 @@
  */
 import {
   DEFAULT_CONFIG,
+  resolveConfig,
   getDayStat,
   getWeekStats,
   getMonthStats,
   getDailyWage,
+  getCurrencyDecimals,
   sumStat,
   addDays,
   startOfDay,
@@ -43,6 +45,11 @@ const els = {
 };
 
 const lang = () => normalizeLang(config.language);
+
+/** 金额展示：符号与小数位都取自当前单位 */
+function money(value, decimals = getCurrencyDecimals(config)) {
+  return formatMoney(value, config.currencySymbol, decimals);
+}
 
 /* ---------------- 图表工具 ---------------- */
 
@@ -121,7 +128,7 @@ function renderWeekChart(stats) {
   const done = stats.filter((s) => !s.isFuture).length;
   els.weekTip.textContent = t(l, "tip.week", {
     n: done,
-    peak: formatMoney(Math.max(...values), config.currencySymbol)
+    peak: money(Math.max(...values))
   });
 }
 
@@ -181,7 +188,7 @@ function renderMonthChart(stats) {
   els.monthChart.innerHTML = svg;
   els.monthTip.textContent = t(l, "tip.month", {
     n,
-    target: formatMoney(daily, config.currencySymbol)
+    target: money(daily)
   });
 }
 
@@ -200,24 +207,24 @@ function renderSummary() {
 
   els.rangeHint.textContent = t(l, "range.hint", {
     period: formatMonthTitle(now, l),
-    salary: formatMoney(config.monthlySalary, config.currencySymbol, 0),
+    salary: money(config.monthlySalary, 0),
     days: (config.workDays || []).length
   });
 
-  els.statToday.textContent = formatMoney(today.earned, config.currencySymbol);
+  els.statToday.textContent = money(today.earned);
   els.statTodaySub.textContent = t(l, "sub.today", {
     h: (today.worked / 3600).toFixed(2),
     p: Math.round(today.progress)
   });
 
   const elapsedDays = week.filter((s) => !s.isFuture).length || 1;
-  els.statWeek.textContent = formatMoney(weekSum.earned, config.currencySymbol);
+  els.statWeek.textContent = money(weekSum.earned);
   els.statWeekSub.textContent = t(l, "sub.week", {
     h: (weekSum.worked / 3600).toFixed(1),
-    avg: formatMoney(weekSum.earned / elapsedDays, config.currencySymbol)
+    avg: money(weekSum.earned / elapsedDays)
   });
 
-  els.statMonth.textContent = formatMoney(monthSum.earned, config.currencySymbol);
+  els.statMonth.textContent = money(monthSum.earned);
   els.statMonthSub.textContent = t(l, "sub.month", {
     h: (monthSum.worked / 3600).toFixed(1),
     d: daily > 0 ? (monthSum.earned / daily).toFixed(1) : "0"
@@ -324,20 +331,15 @@ async function toggleLanguage() {
 /* ---------------- 启动 ---------------- */
 
 async function init() {
-  config = { ...DEFAULT_CONFIG, ...(await chrome.storage.sync.get(DEFAULT_CONFIG)) };
+  config = resolveConfig(await chrome.storage.sync.get(null));
   refreshLangChrome();
   renderSummary();
 
-  chrome.storage.onChanged.addListener((changes, area) => {
+  chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "sync") return;
-    let langChanged = false;
-    Object.keys(changes).forEach((k) => {
-      if (k in DEFAULT_CONFIG) {
-        config[k] = changes[k].newValue;
-        if (k === "language") langChanged = true;
-      }
-    });
-    if (langChanged) refreshLangChrome();
+    const prevLang = lang();
+    config = resolveConfig(await chrome.storage.sync.get(null));
+    if (lang() !== prevLang) refreshLangChrome();
     renderSummary();
   });
 
