@@ -8,52 +8,59 @@
 </head>
 <body>
   <div class="container">
-    <!-- Header: Date & Status -->
+    <!-- 顶部：日期 + 状态 -->
     <header class="header">
       <div class="date-section">
         <div class="date-label">今天是</div>
-        <div id="currentDate" class="date-value"></div>
+        <div id="currentDate" class="date-value">--</div>
         <div id="weekday" class="weekday"></div>
       </div>
       <div class="status-section">
-        <div id="workStatus" class="status-badge">加载中...</div>
+        <div id="workStatus" class="status-badge">加载中…</div>
         <div id="statusMessage" class="status-message"></div>
       </div>
     </header>
 
-    <!-- Main: Salary Counter -->
     <main class="main">
+      <!-- 今日已赚 -->
       <div class="salary-card">
         <div class="salary-label">今日已赚</div>
         <div class="salary-amount" id="earnedSalary">¥0.00</div>
         <div class="salary-subtitle" id="salaryRateHint"></div>
       </div>
 
-      <!-- Timer -->
-      <div class="timer-card">
-        <div class="timer-label">已工作</div>
-        <div class="timer-display" id="workTimer">00:00:00</div>
-        <div class="timer-progress">
-          <div class="progress-bar">
-            <div id="progressFill" class="progress-fill"></div>
-          </div>
-          <div class="progress-text" id="progressText">0% / 100%</div>
+      <!-- 已工作 / 距下班 -->
+      <div class="dual-row">
+        <div class="mini-card">
+          <div class="mini-label">已工作</div>
+          <div class="mini-value mono" id="workTimer">00:00:00</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-label" id="countdownLabel">距下班</div>
+          <div class="mini-value mono accent" id="countdown">00:00:00</div>
         </div>
       </div>
 
-      <!-- Motivational Quote -->
-      <div class="quote-card" id="quoteCard">
-        <div id="quoteText" class="quote-text">加载中...</div>
+      <!-- 今日进度 -->
+      <div class="progress-strip">
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+      </div>
+
+      <!-- 激励语录 -->
+      <div class="quote-card">
+        <div id="quoteText" class="quote-text">加载中…</div>
       </div>
     </main>
 
-    <!-- Footer: Quick Actions -->
     <footer class="footer">
+      <button id="statsBtn" class="btn btn-primary" title="查看统计数据">📊 统计</button>
       <button id="settingsBtn" class="btn btn-secondary" title="设置">⚙ 设置</button>
-      <button id="resetBtn" class="btn btn-danger" title="重置今日数据">重置</button>
     </footer>
   </div>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

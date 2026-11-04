@@ -1,39 +1,21 @@
 /**
- * 上班鼓励器 - Popup Logic
- * 实时计算今日已赚工资、工作时长、当前状态
+ * 上班鼓励器 · Popup
+ * 实时计算今日已赚、已工作时长、下班倒计时、当前状态
  */
+import {
+  DEFAULT_CONFIG,
+  getDayStat,
+  getStatus,
+  getWindows,
+  getHourlyRate,
+  getDailyWage,
+  formatClock,
+  formatMoney
+} from "./lib/calc.js";
 
-// ============ 配置默认值 ============
-const DEFAULT_CONFIG = {
-  monthlySalary: 20000,      // 月薪
-  workDaysPerMonth: 21.75,   // 月工作天数（法定）
-  workStart: "09:00",        // 上班时间
-  workEnd: "18:00",          // 下班时间
-  breakStart: "12:00",       // 午休开始
-  breakEnd: "13:30",         // 午休结束
-  currencySymbol: "¥",
-  motivationalQuotes: [
-    "每一秒都在为自由存钱 💪",
-    "老板在为你打工，你在为自己打工",
-    "再坚持一下，离财务自由又近了一步",
-    "搬砖虽苦，但砖砖都是爱的形状 ❤️",
-    "今天的汗水，是明天的底气",
-    "上班不是目的，赚钱才是正事 💰",
-    "每敲一次键盘，存款就多一分钱",
-    "别灰心，退休倒计时又少了一天 📅",
-    "打工人打工魂，打工都是人上人",
-    "这杯咖啡，公司请了 ☕"
-  ]
-};
-
-// ============ 状态变量 ============
 let config = { ...DEFAULT_CONFIG };
-let todayEarned = 0;
-let todayWorkSeconds = 0;
-let timerInterval = null;
-let isWorkingNow = false;
+let tickTimer = null;
 
-// ============ DOM 元素 ============
 const els = {
   currentDate: document.getElementById("currentDate"),
   weekday: document.getElementById("weekday"),
@@ -42,268 +24,130 @@ const els = {
   earnedSalary: document.getElementById("earnedSalary"),
   salaryRateHint: document.getElementById("salaryRateHint"),
   workTimer: document.getElementById("workTimer"),
+  countdownLabel: document.getElementById("countdownLabel"),
+  countdown: document.getElementById("countdown"),
   progressFill: document.getElementById("progressFill"),
   progressText: document.getElementById("progressText"),
   quoteText: document.getElementById("quoteText"),
-  settingsBtn: document.getElementById("settingsBtn"),
-  resetBtn: document.getElementById("resetBtn")
+  statsBtn: document.getElementById("statsBtn"),
+  settingsBtn: document.getElementById("settingsBtn")
 };
 
-// ============ 工具函数 ============
-function formatTime(seconds) {
-  const h = Math.floor(seconds / 3600).toString().padStart(2, "0");
-  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
-  const s = (seconds % 60).toString().padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
+const WEEKDAY_NAMES = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
-function formatMoney(amount) {
-  return `${config.currencySymbol}${amount.toFixed(2)}`;
-}
-
-function parseTimeStr(timeStr) {
-  const [h, m] = timeStr.split(":").map(Number);
-  return h * 3600 + m * 60;
-}
-
-function getTodayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,"0")}-${d.getDate().toString().padStart(2,"0")}`;
-}
-
-function getWorkSecondsToday(now = new Date()) {
-  const startSec = parseTimeStr(config.workStart);
-  const endSec = parseTimeStr(config.workEnd);
-  const breakStartSec = parseTimeStr(config.breakStart);
-  const breakEndSec = parseTimeStr(config.breakEnd);
-
-  const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
-  // 未到上班时间
-  if (nowSec < startSec) return 0;
-
-  // 已过下班时间
-  if (nowSec >= endSec) {
-    let total = endSec - startSec;
-    // 扣除午休
-    if (endSec > breakStartSec) {
-      total -= Math.min(endSec, breakEndSec) - breakStartSec;
-    }
-    return Math.max(0, total);
+/* ---------- 状态文案 ---------- */
+function statusMeta(status, config) {
+  const otRate = config.weekdayOvertimeRate || 1.5;
+  const weRate = config.weekendRate || 2;
+  switch (status) {
+    case "working":
+      return { label: "🟢 正在上班", cls: "working", msg: "好好搬砖，每一秒都在增值" };
+    case "break":
+      return { label: "🟡 午休中", cls: "break", msg: "午休时间，金额暂停增长 😴" };
+    case "overtime":
+      return {
+        label: "🟠 加班中",
+        cls: "overtime",
+        msg: `加班 ${otRate}× 计薪，每一秒都更值钱 🔥`
+      };
+    case "off":
+      return { label: "⚪ 已下班", cls: "off", msg: "今天到此为止，享受生活 🎉" };
+    case "rest":
+      return {
+        label: `⚪ ${config.weekendEnabled ? "休息日" : "今天不上班"}`,
+        cls: "rest",
+        msg: config.weekendEnabled ? `如果来加班，按 ${weRate}× 计薪` : "好好休息，明天再战 🛋"
+      };
+    default:
+      return { label: "🔴 尚未上班", cls: "off", msg: "还没上班，先喝杯咖啡缓一缓 ☕" };
   }
+}
 
-  // 在工作时间内
-  let worked = nowSec - startSec;
-  // 扣除午休（如果已经过午休开始）
-  if (nowSec > breakStartSec) {
-    worked -= Math.min(nowSec, breakEndSec) - breakStartSec;
+/* ---------- 倒计时信息 ---------- */
+function countdownInfo(stat, status, config, now) {
+  const { wStart } = getWindows(config);
+  const sec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+  if (status === "before") {
+    return { label: "距上班", seconds: Math.max(0, wStart - sec) };
   }
-  return Math.max(0, worked);
+  if (status === "overtime") {
+    return stat.isWorkday
+      ? { label: "加班时长", seconds: stat.overtime }
+      : { label: "周末已干", seconds: stat.worked };
+  }
+  if (status === "off" || status === "rest") {
+    return { label: "距下班", seconds: null };
+  }
+  return { label: "距下班", seconds: stat.countdown };
 }
 
-function getTotalWorkSecondsToday() {
-  const startSec = parseTimeStr(config.workStart);
-  const endSec = parseTimeStr(config.workEnd);
-  const breakStartSec = parseTimeStr(config.breakStart);
-  const breakEndSec = parseTimeStr(config.breakEnd);
-  let total = endSec - startSec;
-  total -= (breakEndSec - breakStartSec);
-  return Math.max(0, total);
-}
-
-function getHourlyRate() {
-  // 月薪 / 月工作天数 / 日工作小时数
-  const dailyHours = getTotalWorkSecondsToday() / 3600;
-  return config.monthlySalary / config.workDaysPerMonth / dailyHours;
-}
-
-function getWorkStatus(now = new Date()) {
-  const startSec = parseTimeStr(config.workStart);
-  const endSec = parseTimeStr(config.workEnd);
-  const breakStartSec = parseTimeStr(config.breakStart);
-  const breakEndSec = parseTimeStr(config.breakEnd);
-  const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
-  if (nowSec < startSec) return "offwork";
-  if (nowSec >= endSec) return "offwork";
-  if (nowSec >= breakStartSec && nowSec < breakEndSec) return "break";
-  return "working";
-}
-
-function getRandomQuote() {
-  const quotes = config.motivationalQuotes || DEFAULT_CONFIG.motivationalQuotes;
-  return quotes[Math.floor(Math.random() * quotes.length)];
-}
-
-// ============ 存储相关 ============
-async function loadConfig() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(DEFAULT_CONFIG, (items) => {
-      config = { ...DEFAULT_CONFIG, ...items };
-      resolve(config);
-    });
-  });
-}
-
-async function loadTodayData() {
-  const key = getTodayKey();
-  return new Promise((resolve) => {
-    chrome.storage.local.get([key], (items) => {
-      const data = items[key] || { earned: 0, workSeconds: 0, lastUpdate: Date.now() };
-      todayEarned = data.earned || 0;
-      todayWorkSeconds = data.workSeconds || 0;
-      resolve(data);
-    });
-  });
-}
-
-async function saveTodayData() {
-  const key = getTodayKey();
-  const data = {
-    earned: todayEarned,
-    workSeconds: todayWorkSeconds,
-    lastUpdate: Date.now()
-  };
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [key]: data }, resolve);
-  });
-}
-
-async function resetTodayData() {
-  const key = getTodayKey();
-  todayEarned = 0;
-  todayWorkSeconds = 0;
-  await new Promise((resolve) => {
-    chrome.storage.local.remove([key], resolve);
-  });
-  updateUI();
-}
-
-// ============ UI 更新 ============
-function updateDateTime() {
+/* ---------- 渲染 ---------- */
+function render() {
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  const stat = getDayStat(now, config, now);
+  const status = getStatus(config, now);
+  const meta = statusMeta(status, config);
 
-  els.currentDate.textContent = `${month}月${day}日`;
-  els.weekday.textContent = weekdays[now.getDay()];
+  els.currentDate.textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
+  els.weekday.textContent = WEEKDAY_NAMES[now.getDay()];
+
+  els.workStatus.textContent = meta.label;
+  els.workStatus.className = `status-badge ${meta.cls}`;
+  els.statusMessage.textContent = meta.msg;
+
+  els.earnedSalary.textContent = formatMoney(stat.earned, config.currencySymbol);
+
+  const hourly = getHourlyRate(config);
+  const daily = getDailyWage(config);
+  const extras = [];
+  if (config.overtimeEnabled) extras.push(`加班 ${config.weekdayOvertimeRate || 1.5}×`);
+  if (config.weekendEnabled) extras.push(`周末 ${config.weekendRate || 2}×`);
+  els.salaryRateHint.textContent =
+    `时薪 ${formatMoney(hourly, config.currencySymbol)} · 日薪 ${formatMoney(daily, config.currencySymbol)}` +
+    (extras.length ? ` · ${extras.join(" · ")}` : "");
+
+  els.workTimer.textContent = formatClock(stat.worked);
+  els.workTimer.classList.toggle("running", status === "working" || status === "overtime");
+
+  const cd = countdownInfo(stat, status, config, now);
+  els.countdownLabel.textContent = cd.label;
+  els.countdown.textContent = cd.seconds === null ? "—" : formatClock(cd.seconds);
+
+  els.progressFill.style.width = `${stat.progress.toFixed(1)}%`;
+  els.progressText.textContent = `${Math.round(stat.progress)}%`;
 }
 
-function updateStatus() {
-  const now = new Date();
-  const status = getWorkStatus(now);
-
-  isWorkingNow = (status === "working");
-
-  const statusMap = {
-    working: { text: "🟢 正在上班", class: "working", msg: "好好搬砖，每一秒都在增值！" },
-    break: { text: "🟡 午休中", class: "break", msg: "好好休息，下午继续冲！☕" },
-    offwork: {
-      text: now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() < parseTimeStr(config.workStart)
-        ? "🔴 尚未上班"
-        : "🔴 已下班",
-      class: "offwork",
-      msg: now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() < parseTimeStr(config.workStart)
-        ? "还没上班，先喝杯咖啡缓缓 ☕"
-        : "下班啦！关掉电脑，享受生活 🎉"
-    }
-  };
-
-  const s = statusMap[status];
-  els.workStatus.textContent = s.text;
-  els.workStatus.className = `status-badge ${s.class}`;
-  els.statusMessage.textContent = s.msg;
-}
-
-function updateSalary() {
-  const hourlyRate = getHourlyRate();
-  const dailyHours = getTotalWorkSecondsToday() / 3600;
-  const workedHours = todayWorkSeconds / 3600;
-  todayEarned = workedHours * hourlyRate;
-
-  els.earnedSalary.textContent = formatMoney(todayEarned);
-  els.salaryRateHint.textContent = `时薪约 ${formatMoney(hourlyRate)} · 日薪约 ${formatMoney(hourlyRate * dailyHours)}`;
-}
-
-function updateTimer() {
-  const now = new Date();
-  todayWorkSeconds = getWorkSecondsToday(now);
-
-  els.workTimer.textContent = formatTime(todayWorkSeconds);
-  els.workTimer.classList.toggle("running", isWorkingNow);
-
-  const totalSeconds = getTotalWorkSecondsToday();
-  const progress = totalSeconds > 0 ? (todayWorkSeconds / totalSeconds) * 100 : 0;
-  const clampedProgress = Math.min(100, Math.max(0, progress));
-
-  els.progressFill.style.width = `${clampedProgress}%`;
-  els.progressText.textContent = `${Math.round(clampedProgress)}% / 100%`;
-}
-
-function updateQuote() {
-  els.quoteText.textContent = getRandomQuote();
-}
-
-function updateUI() {
-  updateDateTime();
-  updateStatus();
-  updateSalary();
-  updateTimer();
-  updateQuote();
-}
-
-// ============ 定时器循环 ============
-function startTimer() {
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    updateStatus();
-    updateTimer();
-    updateSalary();
-    saveTodayData();
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-}
-
-// ============ 事件绑定 ============
-els.settingsBtn.addEventListener("click", () => {
-  chrome.runtime.openOptionsPage();
-});
-
-els.resetBtn.addEventListener("click", async () => {
-  if (confirm("确定要重置今日数据吗？这将清空已赚工资和工作时长。")) {
-    await resetTodayData();
-  }
-});
-
-// ============ 初始化 ============
+/* ---------- 启动 ---------- */
 async function init() {
-  await loadConfig();
-  await loadTodayData();
-  updateUI();
-  startTimer();
+  config = { ...DEFAULT_CONFIG, ...(await chrome.storage.sync.get(DEFAULT_CONFIG)) };
 
-  // 监听配置变更
+  const quotes = Array.isArray(config.motivationalQuotes) && config.motivationalQuotes.length
+    ? config.motivationalQuotes
+    : DEFAULT_CONFIG.motivationalQuotes;
+  els.quoteText.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+
+  render();
+  tickTimer = setInterval(render, 1000);
+
+  // 设置改变时立即反映
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "sync") {
-      Object.keys(changes).forEach(key => {
-        if (DEFAULT_CONFIG.hasOwnProperty(key)) {
-          config[key] = changes[key].newValue;
-        }
-      });
-      updateUI();
-    }
+    if (area !== "sync") return;
+    Object.keys(changes).forEach((k) => {
+      if (k in DEFAULT_CONFIG) config[k] = changes[k].newValue;
+    });
+    render();
   });
 }
 
-// 页面卸载时保存
-window.addEventListener("beforeunload", saveTodayData);
+els.statsBtn.addEventListener("click", () => {
+  const url = chrome.runtime.getURL("dashboard.html");
+  if (chrome.tabs && chrome.tabs.create) chrome.tabs.create({ url });
+  else window.open(url, "_blank");
+});
 
-// 启动
+els.settingsBtn.addEventListener("click", () => chrome.runtime.openOptionsPage());
+
+window.addEventListener("unload", () => clearInterval(tickTimer));
+
 init();
