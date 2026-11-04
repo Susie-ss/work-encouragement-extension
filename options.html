@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上班鼓励器 - 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <header class="options-header">
+      <h1>⚙ 上班鼓励器设置</h1>
+      <p class="subtitle">配置你的薪资、工作时间，让鼓励器更精准</p>
+    </header>
+
+    <main class="options-main">
+      <section class="section">
+        <h2>💰 薪资设置</h2>
+        <div class="field">
+          <label for="monthlySalary">月薪 (税前)</label>
+          <input type="number" id="monthlySalary" min="0" step="100" placeholder="例如 20000">
+          <span class="hint">用于计算时薪和日薪</span>
+        </div>
+        <div class="field">
+          <label for="workDaysPerMonth">月工作天数</label>
+          <input type="number" id="workDaysPerMonth" min="1" max="31" step="0.5" placeholder="21.75">
+          <span class="hint">法定月工作天数通常为 21.75 天</span>
+        </div>
+        <div class="field">
+          <label for="currencySymbol">货币符号</label>
+          <input type="text" id="currencySymbol" maxlength="2" placeholder="¥">
+          <span class="hint">显示在金额前的符号</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>⏰ 工作时间设置</h2>
+        <div class="field">
+          <label for="workStart">上班时间</label>
+          <input type="time" id="workStart">
+        </div>
+        <div class="field">
+          <label for="workEnd">下班时间</label>
+          <input type="time" id="workEnd">
+        </div>
+        <div class="field">
+          <label for="breakStart">午休开始</label>
+          <input type="time" id="breakStart">
+        </div>
+        <div class="field">
+          <label for="breakEnd">午休结束</label>
+          <input type="time" id="breakEnd">
+        </div>
+        <p class="section-hint">午休时间将自动从工作时长中扣除</p>
+      </section>
+
+      <section class="section">
+        <h2>💬 激励语录 (可选)</h2>
+        <div class="field">
+          <label for="motivationalQuotes">自定义激励语录 (每行一条)</label>
+          <textarea id="motivationalQuotes" rows="6" placeholder="每一秒都在为自由存钱&#10;再坚持一下，离财务自由又近了一步&#10;搬砖虽苦，但砖砖都是爱的形状"></textarea>
+          <span class="hint">留空将使用内置语录库。每行一条，随机展示。</span>
+        </div>
+      </section>
+
+      <section class="section section-danger">
+        <h2>🗑 危险操作</h2>
+        <button id="resetAllBtn" class="btn btn-danger">重置所有设置为默认值</button>
+        <p class="hint">这将清除所有自定义配置，恢复出厂设置</p>
+      </section>
+    </main>
+
+    <footer class="options-footer">
+      <button id="saveBtn" class="btn btn-primary">保存设置</button>
+      <span id="saveStatus" class="save-status"></span>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

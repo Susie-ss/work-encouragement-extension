@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上班鼓励器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header: Date & Status -->
+    <header class="header">
+      <div class="date-section">
+        <div class="date-label">今天是</div>
+        <div id="currentDate" class="date-value"></div>
+        <div id="weekday" class="weekday"></div>
+      </div>
+      <div class="status-section">
+        <div id="workStatus" class="status-badge">加载中...</div>
+        <div id="statusMessage" class="status-message"></div>
+      </div>
+    </header>
+
+    <!-- Main: Salary Counter -->
+    <main class="main">
+      <div class="salary-card">
+        <div class="salary-label">今日已赚</div>
+        <div class="salary-amount" id="earnedSalary">¥0.00</div>
+        <div class="salary-subtitle" id="salaryRateHint"></div>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-card">
+        <div class="timer-label">已工作</div>
+        <div class="timer-display" id="workTimer">00:00:00</div>
+        <div class="timer-progress">
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+          <div class="progress-text" id="progressText">0% / 100%</div>
+        </div>
+      </div>
+
+      <!-- Motivational Quote -->
+      <div class="quote-card" id="quoteCard">
+        <div id="quoteText" class="quote-text">加载中...</div>
+      </div>
+    </main>
+
+    <!-- Footer: Quick Actions -->
+    <footer class="footer">
+      <button id="settingsBtn" class="btn btn-secondary" title="设置">⚙ 设置</button>
+      <button id="resetBtn" class="btn btn-danger" title="重置今日数据">重置</button>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
