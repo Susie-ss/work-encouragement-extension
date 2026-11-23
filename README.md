@@ -74,7 +74,7 @@ A Chrome extension that turns your salary into **seconds**. Click the toolbar ic
 
 **方式一：下载安装包（推荐）**
 
-到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.5.0.zip`，解压后得到一个文件夹，然后：
+到 [Releases](https://github.com/Susie-ss/work-encouragement-extension/releases/latest) 下载 `work-encouragement-extension-v1.7.0.zip`，解压后得到一个文件夹，然后：
 
 1. 打开 Chrome，地址栏输入 `chrome://extensions/`
 2. 右上角打开 **开发者模式**
