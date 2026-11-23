@@ -22,17 +22,24 @@ import {
   formatDateTitle,
   WEEKDAYS
 } from "./lib/i18n.js";
+import { syncState, balanceBase, toDisplay } from "./lib/game.js";
+import {
+  rankFor,
+  loggedSeconds,
+  weekdayEgg
+} from "./lib/extras.js";
 
 let config = { ...DEFAULT_CONFIG };
 let tickTimer = null;
 let currentQuote = "";
+/** 钱包 state 缓存：段位统计要用账本里的累计工时 */
+let cachedState = null;
 
 const els = {
   millScene: document.getElementById("millScene"),
   currentDate: document.getElementById("currentDate"),
   weekday: document.getElementById("weekday"),
   workStatus: document.getElementById("workStatus"),
-  statusMessage: document.getElementById("statusMessage"),
   earnedSalary: document.getElementById("earnedSalary"),
   salaryRateHint: document.getElementById("salaryRateHint"),
   workTimer: document.getElementById("workTimer"),
@@ -42,8 +49,14 @@ const els = {
   progressText: document.getElementById("progressText"),
   quoteText: document.getElementById("quoteText"),
   statsBtn: document.getElementById("statsBtn"),
+  walletBtn: document.getElementById("walletBtn"),
   settingsBtn: document.getElementById("settingsBtn"),
-  langBtn: document.getElementById("langBtn")
+  langBtn: document.getElementById("langBtn"),
+  walletPill: document.getElementById("walletPill"),
+  walletPillLabel: document.getElementById("walletPillLabel"),
+  walletPillValue: document.getElementById("walletPillValue"),
+  rankBadge: document.getElementById("rankBadge"),
+  rankHours: document.getElementById("rankHours")
 };
 
 const lang = () => normalizeLang(config.language);
@@ -65,11 +78,12 @@ function millPhase(status, stat) {
   return "tired"; // before / off
 }
 
-function renderMill(phase) {
+function renderMill(phase, egg = "") {
+  const scene = els.millScene;
+  if (!scene) return;
   // 只在值变化时写，避免每秒重设导致动画复位
-  if (els.millScene && els.millScene.dataset.phase !== phase) {
-    els.millScene.dataset.phase = phase;
-  }
+  if (scene.dataset.phase !== phase) scene.dataset.phase = phase;
+  if (scene.dataset.egg !== egg) scene.dataset.egg = egg;
 }
 
 /* ---------- 状态文案 ---------- */
@@ -131,14 +145,16 @@ function render() {
   const status = getStatus(config, now);
   const meta = statusMeta(status);
 
-  renderMill(millPhase(status, stat));
+  // 周彩蛋：周一上班打哈欠、周五下班疯跑
+  const egg = weekdayEgg(now, status);
+  const phase = egg.phaseOverride || millPhase(status, stat);
+  renderMill(phase, egg.egg);
 
   els.currentDate.textContent = formatDateTitle(now, l);
   els.weekday.textContent = WEEKDAYS[l][now.getDay()];
 
   els.workStatus.textContent = meta.label;
   els.workStatus.className = `status-badge ${meta.cls}`;
-  els.statusMessage.textContent = meta.msg;
 
   // 金额统一走「当前单位 + 该单位的小数位」，换单位后符号与位数一起跟着变
   const dec = getCurrencyDecimals(config);
@@ -162,6 +178,16 @@ function render() {
 
   els.progressFill.style.width = `${stat.progress.toFixed(1)}%`;
   els.progressText.textContent = `${Math.round(stat.progress)}%`;
+
+  // 打工段位：累计工时来自账本（历史结算）+ 今日在途
+  renderRank(stat.worked, l);
+}
+
+function renderRank(todayWorked, l) {
+  const ledger = cachedState && cachedState.wallet ? cachedState.wallet.ledger : null;
+  const rank = rankFor(loggedSeconds(ledger, todayWorked), l);
+  els.rankBadge.textContent = rank.name;
+  els.rankHours.textContent = t(l, "rank.hours", { h: Math.round(rank.hours) });
 }
 
 /* ---------- 语言 ---------- */
@@ -187,12 +213,33 @@ async function toggleLanguage() {
   render();
 }
 
+/* ---------- 钱包胶囊 ---------- */
+async function refreshWallet() {
+  if (!els.walletPill) return;
+  try {
+    const { state } = await syncState(config);
+    cachedState = state;
+    const bal = balanceBase(state.wallet);
+    els.walletPillValue.textContent = formatMoney(
+      toDisplay(bal, config),
+      config.currencySymbol,
+      getCurrencyDecimals(config)
+    );
+    els.walletPill.hidden = false;
+    els.walletPill.title = lang() === "zh" ? "打开钱包与商城" : "Open wallet & shop";
+    renderRank(getDayStat(new Date(), config, new Date()).worked, lang());
+  } catch (err) {
+    els.walletPill.hidden = true;
+  }
+}
+
 /* ---------- 启动 ---------- */
 async function init() {
   config = resolveConfig(await chrome.storage.sync.get(null));
 
   refreshLangChrome();
   render();
+  refreshWallet();
   tickTimer = setInterval(render, 1000);
 
   // 设置改变时立即反映：整份重读再规整，避免只更新到一半（例如换了单位没换符号）
@@ -203,17 +250,24 @@ async function init() {
     if (lang() !== prevLang) refreshLangChrome();
     else if ("motivationalQuotes" in changes) pickQuote();
     render();
+    refreshWallet();
   });
 }
 
-els.statsBtn.addEventListener("click", () => {
-  const url = chrome.runtime.getURL("dashboard.html");
+/** 打开统计面板，带 hash 时直落到对应 tab */
+function openDashboard(hash) {
+  const url = chrome.runtime.getURL("dashboard.html") + (hash ? `#${hash}` : "");
   if (chrome.tabs && chrome.tabs.create) chrome.tabs.create({ url });
   else window.open(url, "_blank");
-});
+}
 
+els.statsBtn.addEventListener("click", () => openDashboard("stats"));
+els.walletBtn.addEventListener("click", () => openDashboard("wallet"));
 els.settingsBtn.addEventListener("click", () => chrome.runtime.openOptionsPage());
 els.langBtn.addEventListener("click", toggleLanguage);
+if (els.walletPill) {
+  els.walletPill.addEventListener("click", () => openDashboard("wallet"));
+}
 
 window.addEventListener("unload", () => clearInterval(tickTimer));
 

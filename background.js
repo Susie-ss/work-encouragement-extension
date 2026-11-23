@@ -10,12 +10,26 @@ import {
   formatMoney
 } from "./lib/calc.js";
 import { t, normalizeLang } from "./lib/i18n.js";
+import { loadState, saveState } from "./lib/game.js";
+import { settle } from "./lib/wallet.js";
 
 const BADGE_COLOR = "#4f46e5";
 const ALARM_NAME = "badgeTick";
 
 async function readConfig() {
   return resolveConfig(await chrome.storage.sync.get(null));
+}
+
+/** 跨天结算：每分钟的 alarm 顺手检查一次，浏览器没开也不会漏（下次唤醒补算） */
+async function settleWallet(config) {
+  try {
+    const state = await loadState();
+    const before = state.wallet.lastSettled;
+    settle(state, config, new Date());
+    if (state.wallet.lastSettled !== before) await saveState(state);
+  } catch (err) {
+    console.warn("[work-encourager] settle failed", err);
+  }
 }
 
 async function updateBadge() {
@@ -37,6 +51,8 @@ async function updateBadge() {
               amount: formatMoney(stat.earned, config.currencySymbol, getCurrencyDecimals(config))
             })
     });
+
+    await settleWallet(config);
   } catch (err) {
     console.warn("[work-encourager] badge update failed", err);
   }

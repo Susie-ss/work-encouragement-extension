@@ -20,45 +20,155 @@
       </div>
     </header>
 
-    <section class="stat-row">
-      <div class="stat-card">
-        <div class="stat-label" data-i18n="stat.today">Earned today</div>
-        <div class="stat-value" id="statToday">¥0.00</div>
-        <div class="stat-sub" id="statTodaySub">--</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label" data-i18n="stat.week">This week</div>
-        <div class="stat-value" id="statWeek">¥0.00</div>
-        <div class="stat-sub" id="statWeekSub">--</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label" data-i18n="stat.month">This month</div>
-        <div class="stat-value accent" id="statMonth">¥0.00</div>
-        <div class="stat-sub" id="statMonthSub">--</div>
+    <nav class="tabbar" id="tabbar">
+      <button class="tab is-active" data-tab="stats">Stats</button>
+      <button class="tab" data-tab="wallet">Wallet</button>
+      <button class="tab" data-tab="shop">Shop</button>
+      <button class="tab" data-tab="bag">Bag</button>
+    </nav>
+
+    <!-- ============ 统计 ============ -->
+    <section class="tabpanel is-active" data-panel="stats">
+      <div class="panel-stack">
+        <section class="stat-row">
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="stat.today">Earned today</div>
+            <div class="stat-value" id="statToday">¥0.00</div>
+            <div class="stat-sub" id="statTodaySub">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="stat.week">This week</div>
+            <div class="stat-value" id="statWeek">¥0.00</div>
+            <div class="stat-sub" id="statWeekSub">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="stat.month">This month</div>
+            <div class="stat-value accent" id="statMonth">¥0.00</div>
+            <div class="stat-sub" id="statMonthSub">--</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2 data-i18n="chart.week">Daily earnings · this week</h2>
+            <span class="panel-tip" id="weekTip"></span>
+          </div>
+          <svg id="weekChart" viewBox="0 0 700 240" role="img" data-i18n-aria="chart.weekAria"></svg>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2 data-i18n="chart.month">Cumulative · this month</h2>
+            <span class="panel-tip" id="monthTip"></span>
+          </div>
+          <svg id="monthChart" viewBox="0 0 700 240" role="img" data-i18n-aria="chart.monthAria"></svg>
+        </section>
+
+        <p class="footnote" data-i18n="dash.footnote">
+          Amounts are derived live from the salary and hours in Settings.
+        </p>
       </div>
     </section>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2 data-i18n="chart.week">Daily earnings · this week</h2>
-        <span class="panel-tip" id="weekTip"></span>
+    <!-- ============ 钱包 ============ -->
+    <section class="tabpanel" data-panel="wallet">
+      <div class="panel-stack">
+        <div class="wallet-hero">
+          <div class="wallet-label" id="wLabel">Wallet balance</div>
+          <div class="wallet-value" id="wBalance">¥0</div>
+          <div class="wallet-sub" id="wSub">--</div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-label" id="wMonthLabel">In this month</div>
+            <div class="stat-value" id="wMonth">¥0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" id="wFloatLabel">In flight today</div>
+            <div class="stat-value" id="wFloat">¥0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" id="wSpentLabel">Spent</div>
+            <div class="stat-value" id="wSpent">¥0</div>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2 id="wLedgerTitle">Recent settlements</h2>
+            <span class="panel-tip" id="wLedgerTip"></span>
+          </div>
+          <ul class="ledger-list" id="wLedger"></ul>
+        </section>
+
+        <section class="panel save-panel">
+          <div class="panel-head">
+            <h2 id="saveTitle">Save data</h2>
+            <span class="panel-tip" id="saveTip"></span>
+          </div>
+          <p class="save-note" id="saveNote"></p>
+          <div class="save-actions">
+            <button class="btn btn-ghost" id="saveExportBtn">Export</button>
+            <button class="btn btn-ghost" id="saveImportBtn">Import</button>
+            <input type="file" id="saveFile" accept="application/json,.json" hidden>
+          </div>
+        </section>
       </div>
-      <svg id="weekChart" viewBox="0 0 700 240" role="img" data-i18n-aria="chart.weekAria"></svg>
     </section>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2 data-i18n="chart.month">Cumulative · this month</h2>
-        <span class="panel-tip" id="monthTip"></span>
+    <!-- ============ 商城 ============ -->
+    <section class="tabpanel" data-panel="shop">
+      <div class="panel-stack">
+        <div class="shop-head">
+          <div>
+            <div class="shop-balance-label" id="sBalanceLabel">Balance</div>
+            <div class="shop-balance" id="sBalance">¥0</div>
+          </div>
+          <div class="shop-note" id="sNote"></div>
+        </div>
+
+        <h3 class="group-title" id="gPack">Cards</h3>
+        <div class="pack-card" id="packCard"></div>
+
+        <h3 class="group-title" id="gCards">Single cards</h3>
+        <div class="goods-grid" id="goodsCards"></div>
+
+        <h3 class="group-title" id="gSupply">Daily supplies</h3>
+        <div class="goods-grid" id="goodsSupply"></div>
       </div>
-      <svg id="monthChart" viewBox="0 0 700 240" role="img" data-i18n-aria="chart.monthAria"></svg>
     </section>
 
-    <p class="footnote" data-i18n="dash.footnote">
-      Amounts are derived live from the salary and hours in Settings.
-    </p>
+    <!-- ============ 背包 ============ -->
+    <section class="tabpanel" data-panel="bag">
+      <div class="panel-stack">
+        <div class="bag-head">
+          <div>
+            <div class="bag-label" id="bagLabel">Collection</div>
+            <div class="bag-progress" id="bagProgress">0 / 12</div>
+          </div>
+          <div class="bag-head-right">
+            <div class="chips" id="bagChips"></div>
+            <button class="btn btn-ghost share-btn" id="shareBtn">Share</button>
+          </div>
+        </div>
+        <div class="card-wall" id="cardWall"></div>
+        <div class="bag-items" id="bagItems"></div>
+      </div>
+    </section>
   </div>
 
+  <div class="xmodal" id="xmodal" hidden>
+    <div class="xmodal-mask" data-close="1"></div>
+    <div class="xmodal-body">
+      <button class="xmodal-close" id="xmodalClose" aria-label="close">×</button>
+      <div id="xmodalContent"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
   <script type="module" src="dashboard.js"></script>
+  <script type="module" src="dashboard-game.js"></script>
 </body>
 </html>
